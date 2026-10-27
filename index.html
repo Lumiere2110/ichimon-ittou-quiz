@@ -523,7 +523,7 @@ code { font-family: var(--f-mono); font-size: .85em; background: var(--bg); padd
       names.forEach(name => {
         const x = map.get(name);
         const row = el("div", `n l${depth}`); row.append(el("span", null, name), el("span", "count", `${x.n}問`)); t.append(row);
-        walk(x.kids, depth + 1, [...up, name]);
+        if (depth < 3) walk(x.kids, depth + 1, [...up, name]);
       });
     };
     walk(root, 1, []);
