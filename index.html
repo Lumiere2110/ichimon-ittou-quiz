@@ -197,7 +197,19 @@ code { font-family: var(--f-mono); font-size: .85em; background: var(--bg); padd
       </div>
     </div>
     <div class="field">
-      <span class="label">間違えてもいい回数</span>
+      <span class="label">1問で失敗できる回数</span>
+      <div class="seg">
+        <label><input type="radio" name="fails" value="-1" checked><span>制限なし</span></label>
+        <label><input type="radio" name="fails" value="0"><span>0回</span></label>
+        <label><input type="radio" name="fails" value="1"><span>1回</span></label>
+        <label><input type="radio" name="fails" value="2"><span>2回</span></label>
+        <label><input type="radio" name="fails" value="3"><span>3回</span></label>
+        <label><input type="radio" name="fails" value="5"><span>5回</span></label>
+      </div>
+      <span class="note">答えが違っても、制限時間内ならこの回数まで答え直せます。超えるとその問題は不正解です（0回＝1回で判定）。</span>
+    </div>
+    <div class="field">
+      <span class="label">間違えてもいい回数（ゲーム全体）</span>
       <div class="seg">
         <label><input type="radio" name="miss" value="-1" checked><span>制限なし</span></label>
         <label><input type="radio" name="miss" value="0"><span>0回</span></label>
@@ -206,7 +218,7 @@ code { font-family: var(--f-mono); font-size: .85em; background: var(--bg); padd
         <label><input type="radio" name="miss" value="3"><span>3回</span></label>
         <label><input type="radio" name="miss" value="5"><span>5回</span></label>
       </div>
-      <span class="note">この回数を超えて間違えるとゲームオーバーです。パスと時間切れも間違いに数えます。</span>
+      <span class="note">不正解になった問題がこの数を超えるとゲームオーバーです。パスと時間切れも不正解に数えます。</span>
     </div>
     <div class="field">
       <span class="label">その他</span>
@@ -808,7 +820,7 @@ code { font-family: var(--f-mono); font-size: .85em; background: var(--bg); padd
   // ---------- setup ----------
   const radio = name => +document.querySelector(`input[name=${name}]:checked`).value;
   function readSettings() {
-    return { scope: setupScope.value(), diff: radio("diff"), time: radio("time"), miss: radio("miss"), count: +$("optCount").value, shuffle: $("optShuffle").checked, loose: $("optLoose").checked };
+    return { scope: setupScope.value(), diff: radio("diff"), time: radio("time"), miss: radio("miss"), fails: radio("fails"), count: +$("optCount").value, shuffle: $("optShuffle").checked, loose: $("optLoose").checked };
   }
   const pool = s => questions.filter(q => matches(q, s.scope) && (!s.diff || (q.diff || 2) === s.diff));
   function scopeLabel(scope) {
@@ -828,6 +840,7 @@ code { font-family: var(--f-mono); font-size: .85em; background: var(--bg); padd
       const d = document.querySelector(`input[name=diff][value="${s.diff}"]`); if (d) d.checked = true;
       const t = document.querySelector(`input[name=time][value="${s.time}"]`); if (t) t.checked = true;
       const m = document.querySelector(`input[name=miss][value="${s.miss}"]`); if (m) m.checked = true;
+      const f = document.querySelector(`input[name=fails][value="${s.fails}"]`); if (f) f.checked = true;
     }
   } catch {}
 
@@ -866,7 +879,7 @@ code { font-family: var(--f-mono); font-size: .85em; background: var(--bg); padd
   }
   function nextQuestion() {
     const { qs, i, s } = game, q = qs[i];
-    game.answered = false;
+    game.answered = false; game.fails = 0;
     $("gNum").textContent = `第${i + 1}問 / ${qs.length}`;
     $("gTags").replaceChildren(tagsFor(q));
     $("gQ").textContent = q.q;
@@ -890,6 +903,8 @@ code { font-family: var(--f-mono); font-size: .85em; background: var(--bg); padd
   }
   // s.miss: how many wrong answers are allowed (-1 = no limit; older saved settings have none)
   const missLimit = s => s.miss >= 0 ? s.miss : -1;
+  // s.fails: wrong tries allowed on one question before it counts as wrong (-1 = until time runs out; older saved settings: one try)
+  const failLimit = s => s.fails == null ? 0 : s.fails;
   function showScore() {
     const ok = game.results.filter(r => r.ok).length, lim = missLimit(game.s);
     $("gScore").textContent = ok;
@@ -899,15 +914,26 @@ code { font-family: var(--f-mono); font-size: .85em; background: var(--bg); padd
   // why: "answer" | "pass" | "time". A time-out still checks whatever was typed so far.
   function judge(why) {
     if (!game || game.answered) return;
-    game.answered = true; clearInterval(timerId);
     const q = game.qs[game.i], need = slotsOf(q).length;
     const inputs = why === "pass" ? ansInputs().map(() => "") : ansInputs().map(i => i.value);
     const hitsFor = matchSlots(q, inputs, game.s.loose);
     const hits = hitsFor.filter(Boolean).length, ok = hits === need;
-    const typed = inputs.map(s => s.trim()).filter(Boolean);
-    game.results.push({ q, input: typed.join("、"), hits, ok, why: ok ? "answer" : why });
-    ansInputs().forEach((inp, k) => { if (inputs[k].trim()) inp.classList.add(hitsFor[k] ? "hit" : "miss") });
+    ansInputs().forEach((inp, k) => { inp.classList.remove("hit", "miss"); if (inputs[k].trim()) inp.classList.add(hitsFor[k] ? "hit" : "miss") });
     const v = $("verdict"); v.className = "verdict " + (ok ? "ok" : "ng"); v.replaceChildren();
+    // a wrong answer with tries left: say so and let them answer again while the timer keeps running
+    const flim = failLimit(game.s);
+    if (why === "answer" && !ok && (flim < 0 || game.fails < flim)) {
+      game.fails++;
+      v.append(el("b", null, need > 1 && hits ? `ちがいます（${hits} / ${need} 正解）` : "ちがいます"),
+        el("span", "detail", flim < 0 ? "もう一度答えられます。" : `あと ${flim - game.fails + 1} 回答えられます。`));
+      v.hidden = false;
+      const retry = ansInputs().find((inp, k) => !hitsFor[k]) || ansInputs()[0];
+      retry.focus(); retry.select();
+      return;
+    }
+    game.answered = true; clearInterval(timerId);
+    const typed = inputs.map(s => s.trim()).filter(Boolean);
+    game.results.push({ q, input: typed.join("、"), hits, ok, why: ok ? "answer" : why, tries: game.fails + (why === "answer" ? 1 : 0) });
     const label = ok ? "正解！" : why === "pass" ? "パス" : why === "time" && !typed.length ? "時間切れ" : "不正解";
     v.append(el("b", null, need > 1 && !ok && hits ? `${label}（${hits} / ${need} 正解）` : label));
     if (!ok) v.append(el("span", "detail", "正解：" + fmtAnswers(q)));
@@ -928,9 +954,10 @@ code { font-family: var(--f-mono); font-size: .85em; background: var(--bg); padd
 
   const howText = r => {
     const part = isMulti(r.q) && !r.ok && r.hits ? `（${r.hits} / ${slotsOf(r.q).length} 正解）` : "";
-    if (r.why === "pass") return "パス";
-    if (r.why === "time" && !r.input) return "時間切れ";
-    return `${r.why === "time" ? "時間切れ・" : ""}あなたの答え：${r.input}${part}`;
+    const tries = r.tries > 1 ? (r.ok ? `・${r.tries}回目で正解` : `・${r.tries}回答えた`) : "";
+    if (r.why === "pass") return "パス" + tries;
+    if (r.why === "time" && !r.input) return "時間切れ" + tries;
+    return `${r.why === "time" ? "時間切れ・" : ""}あなたの答え：${r.input}${part}${tries}`;
   };
   function endGame(silent) {
     clearInterval(timerId);
@@ -942,6 +969,7 @@ code { font-family: var(--f-mono); font-size: .85em; background: var(--bg); padd
     const lim = missLimit(s);
     $("rDetail").textContent = (g.over ? `ゲームオーバー（${n} / ${g.qs.length}問目で終了） ・ ` : "")
       + `正答率 ${n ? Math.round(ok / n * 100) : 0}% ・ ${scopeLabel(s.scope)} ・ 難易度 ${s.diff ? DIFF_NAME[s.diff] : "すべて"} ・ 制限時間 ${s.time ? s.time + "秒" : "なし"}`
+      + ` ・ 1問で失敗できる回数 ${failLimit(s) < 0 ? "制限なし" : failLimit(s) + "回"}`
       + ` ・ 間違えてもいい回数 ${lim < 0 ? "制限なし" : lim + "回"}`;
 
     // all results
