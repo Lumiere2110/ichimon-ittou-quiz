@@ -4,6 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <style>:root{color-scheme:light;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}body{margin:0;font:14px system-ui,sans-serif}img{max-width:100%}[hidden]{display:none!important}</style>
+<script src="questions.js"></script>
 </head>
 <body>
 <title>一問一答クイズ</title>
@@ -384,7 +385,9 @@ code { font-family: var(--f-mono); font-size: .85em; background: var(--bg); padd
 
   // ---------- storage ----------
   const LS_KEY = "quiz.questions.v1";
-  const lsLoad = () => { try { return JSON.parse(localStorage.getItem(LS_KEY) || "[]") } catch { return [] } };
+  // first visit (nothing saved yet) starts from the bundled questions, if the page ships any
+  const seed = () => (window.QUIZ_SEED || []).map(q => ({ ...q }));
+  const lsLoad = () => { try { const raw = localStorage.getItem(LS_KEY); return raw === null ? seed() : JSON.parse(raw) } catch { return seed() } };
   const lsSave = () => { try { localStorage.setItem(LS_KEY, JSON.stringify(questions)) } catch {} };
   const newId = () => "q" + Date.now().toString(36) + Math.random().toString(36).slice(2, 7);
 
