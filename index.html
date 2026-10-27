@@ -399,6 +399,7 @@ code { font-family: var(--f-mono); font-size: .85em; background: var(--bg); padd
     return [...PRESET_GENRES, ...extra];
   };
   const PRESET_CATS = {
+    "ゲーム": ["RPG", "アクション", "シューティング", "シミュレーション", "アドベンチャー", "パズル・ボードゲーム", "スポーツ・レース", "ゲーム文化・知識"],
     "情報・テクノロジー": ["ITパスポート", "基本情報技術者試験", "応用情報技術者試験"],
     "生活・雑学": ["暮らし", "健康", "お金・買い物", "食べ物", "言葉・コミュニケーション", "身近な科学", "日本の習慣・文化", "一般雑学", "その他"],
   };
@@ -411,6 +412,7 @@ code { font-family: var(--f-mono); font-size: .85em; background: var(--bg); padd
   const PRESET_SUBS = {
     "情報・テクノロジー›応用情報技術者試験": ["基礎理論", "ハードウェア", "OS", "ネットワーク", "データベース", "セキュリティ", "システム開発",
       "プロジェクトマネジメント", "サービスマネジメント", "システム監査", "経営戦略", "企業活動", "法務", "システム戦略", "情報システム戦略"],
+    "生活・雑学›一般雑学": ["名前・由来"],
   };
   const subOrder = (genre, cat, names) => presetFirst(PRESET_SUBS[genre + "›" + cat] || [], names);
   // {id, path[1..3], genre, q, answers[], slots?[[...]], ordered?, image?(data URL), diff, createdAt}
