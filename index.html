@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <style>:root{color-scheme:light;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}body{margin:0;font:14px system-ui,sans-serif}img{max-width:100%}[hidden]{display:none!important}</style>
-<script src="questions.js"></script>
+<script src="questions.js?v=1eb90187"></script>
 </head>
 <body>
 <title>一問一答クイズ</title>
@@ -425,7 +425,10 @@ code { font-family: var(--f-mono); font-size: .85em; background: var(--bg); padd
   const LS_KEY = "quiz.questions.v1";
   // first visit (nothing saved yet) starts from the bundled questions, if the page ships any
   const seed = () => (window.QUIZ_SEED || []).map(q => ({ ...q }));
-  // bundled questions added in a later release are merged in once; ones the viewer already saw (even if deleted since) stay out
+  // Bundled questions sync into the viewer's saved list:
+  // - a bundled question this browser has never seen is added once (deleting it keeps it gone)
+  // - when a bundled question changes, the saved copy is updated unless the viewer edited it
+  // SEEN_KEY maps id -> the bundled version last applied (JSON), or null when unknown (older saves)
   const SEEN_KEY = "quiz.seedSeen.v1";
   function lsLoad() {
     try {
@@ -433,15 +436,23 @@ code { font-family: var(--f-mono); font-size: .85em; background: var(--bg); padd
       if (!bundled.length) return raw === null ? [] : JSON.parse(raw);
       let list = raw === null ? [] : JSON.parse(raw);
       const seenRaw = localStorage.getItem(SEEN_KEY);
+      let seen = seenRaw ? JSON.parse(seenRaw) : {};
+      if (Array.isArray(seen)) seen = Object.fromEntries(seen.map(id => [id, null]));
       // before seen-tracking existed, everything already stored counts as seen
-      const seen = new Set(seenRaw ? JSON.parse(seenRaw) : raw === null ? [] : list.map(q => q.id));
-      const fresh = bundled.filter(q => !seen.has(q.id) && !list.some(x => x.id === q.id));
-      if (fresh.length || raw === null) {
-        list = [...list, ...fresh];
-        localStorage.setItem(LS_KEY, JSON.stringify(list));
+      if (!seenRaw && raw !== null) list.forEach(q => { seen[q.id] = null });
+      let changed = raw === null;
+      for (const b of bundled) {
+        const sig = JSON.stringify(b), i = list.findIndex(x => x.id === b.id);
+        if (!(b.id in seen)) {
+          if (i < 0) { list.push(b); changed = true }
+        } else if (seen[b.id] !== sig && i >= 0) {
+          const untouched = seen[b.id] === null || JSON.stringify(list[i]) === seen[b.id];
+          if (untouched) { list[i] = b; changed = true }
+        }
+        seen[b.id] = sig;
       }
-      bundled.forEach(q => seen.add(q.id));
-      localStorage.setItem(SEEN_KEY, JSON.stringify([...seen]));
+      if (changed) localStorage.setItem(LS_KEY, JSON.stringify(list));
+      localStorage.setItem(SEEN_KEY, JSON.stringify(seen));
       return list;
     } catch { return seed() }
   }
