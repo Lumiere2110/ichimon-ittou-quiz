@@ -197,9 +197,21 @@ code { font-family: var(--f-mono); font-size: .85em; background: var(--bg); padd
       </div>
     </div>
     <div class="field">
+      <span class="label">間違えてもいい回数</span>
+      <div class="seg">
+        <label><input type="radio" name="miss" value="-1" checked><span>制限なし</span></label>
+        <label><input type="radio" name="miss" value="0"><span>0回</span></label>
+        <label><input type="radio" name="miss" value="1"><span>1回</span></label>
+        <label><input type="radio" name="miss" value="2"><span>2回</span></label>
+        <label><input type="radio" name="miss" value="3"><span>3回</span></label>
+        <label><input type="radio" name="miss" value="5"><span>5回</span></label>
+      </div>
+      <span class="note">この回数を超えて間違えるとゲームオーバーです。パスと時間切れも間違いに数えます。</span>
+    </div>
+    <div class="field">
       <span class="label">その他</span>
       <label class="check"><input type="checkbox" id="optShuffle" checked> 出題順をランダムにする</label>
-      <label class="check"><input type="checkbox" id="optLoose" checked> ひらがな／カタカナ、全角／半角、大文字／小文字、空白の違いを無視して判定</label>
+      <label class="check"><input type="checkbox" id="optLoose" checked> ゆるく判定する（ひらがな／カタカナ、全角／半角、大文字／小文字、空白、記号、「ー」、小さい文字の違いを無視し、少しの打ち間違いも正解にする）</label>
     </div>
     <div class="row">
       <button id="startBtn" class="btn primary big">スタート</button>
@@ -229,6 +241,7 @@ code { font-family: var(--f-mono); font-size: .85em; background: var(--bg); padd
       <div id="verdict" class="verdict" hidden></div>
       <div class="row">
         <span class="note">正解 <span id="gScore" class="count">0</span></span>
+        <span class="note" id="gMissWrap">ミス <span id="gMiss" class="count">0</span></span>
         <span class="spacer"></span>
         <button class="btn" id="quitBtn" type="button">やめる</button>
         <button class="btn primary" id="nextBtn" type="button" hidden>次の問題（Enter）</button>
@@ -518,6 +531,31 @@ code { font-family: var(--f-mono); font-size: .85em; background: var(--bg); padd
     if (!loose) return s;
     return s.toLowerCase().replace(/\s+/g, "").replace(/[ァ-ヶ]/g, c => String.fromCharCode(c.charCodeAt(0) - 0x60));
   }
+  // looser still: also drops punctuation and symbols (・ - 「」 etc.) and long-vowel marks, and reads small kana as full size
+  const strip = s => normalize(s, true).replace(/[\p{P}\p{S}ー]/gu, "")
+    .replace(/[ぁぃぅぇぉっゃゅょゎゕゖゔ]/g, c => "あいうえおつやゆよわかけぶ"["ぁぃぅぇぉっゃゅょゎゕゖゔ".indexOf(c)]);
+  function editDistance(a, b) {
+    a = [...a]; b = [...b];
+    let prev = Array.from({ length: b.length + 1 }, (_, j) => j);
+    for (let i = 1; i <= a.length; i++) {
+      const cur = [i];
+      for (let j = 1; j <= b.length; j++) cur[j] = Math.min(prev[j] + 1, cur[j - 1] + 1, prev[j - 1] + (a[i - 1] === b[j - 1] ? 0 : 1));
+      prev = cur;
+    }
+    return prev[b.length];
+  }
+  // loose mode: symbols/ー/small kana are ignored for answers that still have 3+ characters without them (so "C++" never matches "C"),
+  // and small typos are forgiven: 1 character for 4+, 2 for 10+. Never for answers with digits (years, numbers).
+  function sameAnswer(answer, input, loose) {
+    if (normalize(answer, loose) === normalize(input, loose)) return true;
+    if (!loose) return false;
+    const a = strip(answer), b = strip(input), len = [...a].length;
+    if (len < 3 || !b) return false;
+    if (a === b) return true;
+    if (/\d/.test(a)) return false;
+    const allow = len >= 10 ? 2 : len >= 4 ? 1 : 0;
+    return allow > 0 && Math.abs(len - [...b].length) <= allow && editDistance(a, b) <= allow;
+  }
   const splitAnswers = s => s.split(/[\/／]/).map(x => x.trim()).filter(Boolean);
   const slotsOf = q => (Array.isArray(q.slots) && q.slots.length ? q.slots : [q.answers || []]);
   const isMulti = q => slotsOf(q).length > 1;
@@ -535,7 +573,7 @@ code { font-family: var(--f-mono); font-size: .85em; background: var(--bg); padd
   // which inputs hit which slot. Unordered: find the best one-to-one matching (small n, plain backtracking)
   function matchSlots(q, inputs, loose) {
     const slots = slotsOf(q);
-    const fits = (inp, si) => inp.trim() !== "" && slots[si].some(a => normalize(a, loose) === normalize(inp, loose));
+    const fits = (inp, si) => inp.trim() !== "" && slots[si].some(a => sameAnswer(a, inp, loose));
     if (q.ordered || slots.length === 1) return inputs.map((inp, i) => i < slots.length && fits(inp, i));
     let best = inputs.map(() => false), bestN = -1;
     const used = new Array(slots.length).fill(false), cur = [];
@@ -770,7 +808,7 @@ code { font-family: var(--f-mono); font-size: .85em; background: var(--bg); padd
   // ---------- setup ----------
   const radio = name => +document.querySelector(`input[name=${name}]:checked`).value;
   function readSettings() {
-    return { scope: setupScope.value(), diff: radio("diff"), time: radio("time"), count: +$("optCount").value, shuffle: $("optShuffle").checked, loose: $("optLoose").checked };
+    return { scope: setupScope.value(), diff: radio("diff"), time: radio("time"), miss: radio("miss"), count: +$("optCount").value, shuffle: $("optShuffle").checked, loose: $("optLoose").checked };
   }
   const pool = s => questions.filter(q => matches(q, s.scope) && (!s.diff || (q.diff || 2) === s.diff));
   function scopeLabel(scope) {
@@ -789,6 +827,7 @@ code { font-family: var(--f-mono); font-size: .85em; background: var(--bg); padd
       $("optCount").value = s.count; $("optShuffle").checked = s.shuffle; $("optLoose").checked = s.loose;
       const d = document.querySelector(`input[name=diff][value="${s.diff}"]`); if (d) d.checked = true;
       const t = document.querySelector(`input[name=time][value="${s.time}"]`); if (t) t.checked = true;
+      const m = document.querySelector(`input[name=miss][value="${s.miss}"]`); if (m) m.checked = true;
     }
   } catch {}
 
@@ -802,7 +841,7 @@ code { font-family: var(--f-mono); font-size: .85em; background: var(--bg); padd
     if (s.count && !list) qs = qs.slice(0, s.count);
     if (!qs.length) return;
     cards = null;
-    game = { s, qs, i: 0, results: [], answered: false };
+    game = { s, qs, i: 0, results: [], answered: false, over: false };
     show("play"); showOnly("viewGame"); $("gTimer").hidden = !s.time; $("gTime").hidden = !s.time;
     nextQuestion();
   }
@@ -834,7 +873,7 @@ code { font-family: var(--f-mono); font-size: .85em; background: var(--bg); padd
     showImage($("gImg"), q);
     $("verdict").hidden = true; $("nextBtn").hidden = true;
     buildAnswerBoxes(q); setAnswerEnabled(true);
-    $("gScore").textContent = game.results.filter(r => r.ok).length;
+    showScore();
     ansInputs()[0].focus();
     clearInterval(timerId);
     if (s.time) {
@@ -848,6 +887,14 @@ code { font-family: var(--f-mono); font-size: .85em; background: var(--bg); padd
       };
       tick(); timerId = setInterval(tick, 100);
     }
+  }
+  // s.miss: how many wrong answers are allowed (-1 = no limit; older saved settings have none)
+  const missLimit = s => s.miss >= 0 ? s.miss : -1;
+  function showScore() {
+    const ok = game.results.filter(r => r.ok).length, lim = missLimit(game.s);
+    $("gScore").textContent = ok;
+    $("gMissWrap").hidden = lim < 0;
+    $("gMiss").textContent = `${game.results.length - ok} / ${lim}回まで`;
   }
   // why: "answer" | "pass" | "time". A time-out still checks whatever was typed so far.
   function judge(why) {
@@ -865,15 +912,18 @@ code { font-family: var(--f-mono); font-size: .85em; background: var(--bg); padd
     v.append(el("b", null, need > 1 && !ok && hits ? `${label}（${hits} / ${need} 正解）` : label));
     if (!ok) v.append(el("span", "detail", "正解：" + fmtAnswers(q)));
     else if (need === 1 && slotsOf(q)[0].length > 1) v.append(el("span", "detail", "別解：" + fmtAnswers(q)));
+    const lim = missLimit(game.s);
+    game.over = lim >= 0 && game.results.filter(r => !r.ok).length > lim;
+    if (game.over) v.append(el("span", "detail", `ゲームオーバー：間違えてもいい回数（${lim}回）を超えました。`));
     v.hidden = false;
     setAnswerEnabled(false);
-    $("gScore").textContent = game.results.filter(r => r.ok).length;
-    $("nextBtn").textContent = game.i + 1 < game.qs.length ? "次の問題（Enter）" : "結果を見る（Enter）";
+    showScore();
+    $("nextBtn").textContent = game.i + 1 < game.qs.length && !game.over ? "次の問題（Enter）" : "結果を見る（Enter）";
     $("nextBtn").hidden = false; $("nextBtn").focus();
   }
   $("ansForm").onsubmit = e => { e.preventDefault(); if (ansInputs().some(i => i.value.trim())) judge("answer") };
   $("passBtn").onclick = () => judge("pass");
-  $("nextBtn").onclick = () => { if (!game) return; game.i++; game.i < game.qs.length ? nextQuestion() : endGame(false) };
+  $("nextBtn").onclick = () => { if (!game) return; game.i++; game.i < game.qs.length && !game.over ? nextQuestion() : endGame(false) };
   $("quitBtn").onclick = () => endGame(!(game && game.results.length));
 
   const howText = r => {
@@ -889,7 +939,10 @@ code { font-family: var(--f-mono); font-size: .85em; background: var(--bg); padd
     const ok = g.results.filter(r => r.ok).length, n = g.results.length;
     $("rScore").replaceChildren(`${ok}`, el("small", null, ` / ${n}`));
     const s = g.s;
-    $("rDetail").textContent = `正答率 ${n ? Math.round(ok / n * 100) : 0}% ・ ${scopeLabel(s.scope)} ・ 難易度 ${s.diff ? DIFF_NAME[s.diff] : "すべて"} ・ 制限時間 ${s.time ? s.time + "秒" : "なし"}`;
+    const lim = missLimit(s);
+    $("rDetail").textContent = (g.over ? `ゲームオーバー（${n} / ${g.qs.length}問目で終了） ・ ` : "")
+      + `正答率 ${n ? Math.round(ok / n * 100) : 0}% ・ ${scopeLabel(s.scope)} ・ 難易度 ${s.diff ? DIFF_NAME[s.diff] : "すべて"} ・ 制限時間 ${s.time ? s.time + "秒" : "なし"}`
+      + ` ・ 間違えてもいい回数 ${lim < 0 ? "制限なし" : lim + "回"}`;
 
     // all results
     const list = $("rList"); list.replaceChildren();
