@@ -1,0 +1,784 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<style>:root{color-scheme:light;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}body{margin:0;font:14px system-ui,sans-serif}img{max-width:100%}[hidden]{display:none!important}</style>
+</head>
+<body>
+<title>一問一答クイズ</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Dela+Gothic+One&family=Zen+Kaku+Gothic+New:wght@400;500;700&family=JetBrains+Mono:wght@500&display=swap">
+<style>
+/* Layout: one centered column; a "board" card holds the question, controls sit below it */
+:root {
+  --bg: #EEF1EC; --surface: #FFFFFF; --ink: #17201C; --muted: #5E6B64; --line: #D3DAD4;
+  --accent: #C8361F; --accent-ink: #FFFFFF; --board: #1F3A2F; --board-ink: #F3F6EE;
+  --ok: #24804F; --ok-bg: #E2F2E8; --ng: #B4271A; --ng-bg: #F8E3E0; --warn: #B87A00;
+  --f-display: "Dela Gothic One", "Hiragino Sans", "Yu Gothic", sans-serif;
+  --f-body: "Zen Kaku Gothic New", "Hiragino Sans", "Yu Gothic", "Meiryo", sans-serif;
+  --f-mono: "JetBrains Mono", ui-monospace, monospace;
+}
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) {
+  --bg: #111613; --surface: #1A211D; --ink: #E7ECE8; --muted: #98A59E; --line: #2D3832;
+  --accent: #EF5A3F; --accent-ink: #1A0D0A; --board: #16352A; --board-ink: #F0F5EC;
+  --ok: #5BC88A; --ok-bg: #173325; --ng: #F07766; --ng-bg: #3A1C18; --warn: #E3AE3A; color-scheme: dark } }
+:root[data-theme="dark"] {
+  --bg: #111613; --surface: #1A211D; --ink: #E7ECE8; --muted: #98A59E; --line: #2D3832;
+  --accent: #EF5A3F; --accent-ink: #1A0D0A; --board: #16352A; --board-ink: #F0F5EC;
+  --ok: #5BC88A; --ok-bg: #173325; --ng: #F07766; --ng-bg: #3A1C18; --warn: #E3AE3A; color-scheme: dark }
+
+* { box-sizing: border-box }
+body { background: var(--bg); color: var(--ink); font-family: var(--f-body); font-size: 15px; line-height: 1.6;
+  padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); padding-block: 24px 48px }
+.wrap { max-width: 760px; margin: 0 auto; display: flex; flex-direction: column; gap: 20px }
+header { display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap }
+h1 { font-family: var(--f-display); font-weight: 400; font-size: 1.7rem; margin: 0; letter-spacing: .02em }
+h1 small { font-family: var(--f-body); font-size: .8rem; color: var(--muted); margin-left: 8px; letter-spacing: 0 }
+h2 { font-size: 1.05rem; margin: 0; text-wrap: balance }
+h3 { font-size: .95rem; margin: 0 }
+nav { display: flex; gap: 4px; background: var(--surface); border: 1px solid var(--line); border-radius: 999px; padding: 4px }
+nav button { border: 0; background: none; color: var(--muted); padding: 6px 16px; border-radius: 999px; font: inherit; font-weight: 700; cursor: pointer }
+nav button[aria-selected="true"] { background: var(--ink); color: var(--bg) }
+
+.stack { display: flex; flex-direction: column; gap: 20px }
+.panel { background: var(--surface); border: 1px solid var(--line); border-radius: 14px; padding: 20px; display: flex; flex-direction: column; gap: 16px }
+.grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 14px 18px }
+.grid3 { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 10px }
+.field { display: flex; flex-direction: column; gap: 6px; min-width: 0 }
+.label { font-size: .75rem; font-weight: 700; color: var(--muted); letter-spacing: .08em }
+.label em { font-style: normal; font-weight: 500; letter-spacing: 0 }
+select, input[type=text], textarea { font: inherit; color: var(--ink); background: var(--bg); border: 1px solid var(--line); border-radius: 8px; padding: 8px 10px; width: 100%; min-width: 0 }
+select:disabled { opacity: .5 }
+textarea { resize: vertical; min-height: 70px }
+select:focus-visible, input:focus-visible, textarea:focus-visible, button:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px }
+.seg { display: flex; flex-wrap: wrap; gap: 6px }
+.seg label { cursor: pointer }
+.seg input { position: absolute; opacity: 0; pointer-events: none }
+.seg span { display: inline-block; padding: 5px 12px; border: 1px solid var(--line); border-radius: 999px; font-size: .9rem; background: var(--bg) }
+.seg input:checked + span { background: var(--ink); color: var(--bg); border-color: var(--ink) }
+.seg input:focus-visible + span { outline: 2px solid var(--accent); outline-offset: 2px }
+.check { display: flex; align-items: center; gap: 8px; font-size: .9rem }
+.arrow { color: var(--muted); font-size: .8rem }
+
+.btn { font: inherit; font-weight: 700; border: 1px solid var(--line); background: var(--surface); color: var(--ink); border-radius: 10px; padding: 8px 16px; cursor: pointer }
+.btn:hover { border-color: var(--ink) }
+.btn.primary { background: var(--accent); color: var(--accent-ink); border-color: var(--accent) }
+.btn.primary:hover { filter: brightness(1.08) }
+.btn.big { font-size: 1.1rem; padding: 12px 28px }
+.btn.small { padding: 4px 12px; font-size: .85rem }
+.btn.danger { color: var(--ng) }
+.btn.okb { color: var(--ok) }
+.btn:disabled { opacity: .45; cursor: not-allowed }
+.row { display: flex; gap: 10px; align-items: center; flex-wrap: wrap }
+.spacer { flex: 1 }
+.note { color: var(--muted); font-size: .85rem; margin: 0 }
+.count { font-family: var(--f-mono); font-variant-numeric: tabular-nums }
+.crumb { font-size: .78rem; color: var(--muted); overflow-wrap: anywhere }
+.crumb b { font-weight: 500; color: var(--ink) }
+
+/* board (game + flashcards) */
+.board { background: var(--board); color: var(--board-ink); border-radius: 16px; padding: 22px 22px 26px; display: flex; flex-direction: column; gap: 14px }
+.board-top { display: flex; justify-content: space-between; align-items: center; gap: 10px; flex-wrap: wrap; font-size: .85rem; opacity: .85 }
+.tag { display: inline-block; border: 1px solid currentColor; border-radius: 999px; padding: 1px 10px; font-size: .78rem; margin: 2px 6px 2px 0 }
+.qnum { font-family: var(--f-display); font-size: 1rem; letter-spacing: .05em }
+.question { font-size: 1.35rem; font-weight: 700; line-height: 1.7; white-space: pre-wrap; overflow-wrap: anywhere; min-height: 3.4em }
+.timer { height: 6px; background: color-mix(in srgb, var(--board-ink) 18%, transparent); border-radius: 3px; overflow: hidden }
+.timer i { display: block; height: 100%; width: 100%; background: var(--board-ink); transform-origin: left; transition: background .3s }
+.timer.low i { background: var(--accent) }
+.tleft { font-family: var(--f-mono); font-variant-numeric: tabular-nums; font-size: 1.1rem }
+.reveal { border-top: 1px dashed color-mix(in srgb, var(--board-ink) 40%, transparent); padding-top: 12px; display: flex; flex-direction: column; gap: 4px }
+.reveal .ans { font-size: 1.3rem; font-weight: 700; overflow-wrap: anywhere }
+.reveal .yours { font-size: .9rem; opacity: .8; overflow-wrap: anywhere }
+.answer-row { display: flex; gap: 10px; flex-wrap: wrap }
+.answer-row input { flex: 1 1 220px; font-size: 1.15rem; padding: 12px 14px }
+.verdict { border-radius: 12px; padding: 14px 16px; display: flex; flex-direction: column; gap: 4px }
+.verdict.ok { background: var(--ok-bg); color: var(--ok) }
+.verdict.ng { background: var(--ng-bg); color: var(--ng) }
+.verdict b { font-family: var(--f-display); font-weight: 400; font-size: 1.4rem }
+.verdict .detail { color: var(--ink); font-size: .95rem }
+.score { display: flex; gap: 20px; flex-wrap: wrap; align-items: baseline }
+.score .big { font-family: var(--f-display); font-size: 3rem; line-height: 1 }
+.score .big small { font-size: 1.2rem }
+
+/* lists */
+.list { display: flex; flex-direction: column; border-top: 1px solid var(--line) }
+.item { display: grid; grid-template-columns: 1fr auto; gap: 4px 12px; padding: 12px 2px; border-bottom: 1px solid var(--line); align-items: start }
+.item .q { overflow-wrap: anywhere; white-space: pre-wrap; min-width: 0 }
+.item .a { color: var(--muted); font-size: .88rem; overflow-wrap: anywhere; grid-column: 1 }
+.item .acts { grid-row: 1 / span 3; grid-column: 2; display: flex; gap: 6px; flex-wrap: wrap; justify-content: flex-end }
+.res { display: grid; grid-template-columns: 2em 1fr; gap: 2px 10px; padding: 10px 2px; border-bottom: 1px solid var(--line) }
+.res > * { min-width: 0 }
+.res .mark { font-family: var(--f-display); font-size: 1.2rem; grid-row: span 3 }
+.res .mark.ok { color: var(--ok) } .res .mark.ng { color: var(--ng) }
+.res .qt { overflow-wrap: anywhere; white-space: pre-wrap }
+.res .sub { font-size: .85rem; color: var(--muted); overflow-wrap: anywhere }
+.res .hiddenans { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; font-size: .9rem }
+.res .hiddenans .ansv { font-weight: 700; color: var(--ng); overflow-wrap: anywhere }
+.review { border: 1px solid var(--ng); background: var(--ng-bg); border-radius: 12px; padding: 14px 16px; display: flex; flex-direction: column; gap: 10px }
+.review .list { border-top-color: color-mix(in srgb, var(--ng) 30%, transparent) }
+.review .res { border-bottom-color: color-mix(in srgb, var(--ng) 30%, transparent) }
+.tree { display: flex; flex-direction: column; gap: 2px; font-size: .9rem }
+.tree .n { display: flex; gap: 8px; align-items: baseline; padding: 2px 0 }
+.tree .n.l1 { font-weight: 700 } .tree .n.l2 { padding-left: 1.4em } .tree .n.l3 { padding-left: 2.8em; color: var(--muted) }
+.tree .n .count { color: var(--muted); font-size: .8rem }
+.empty { text-align: center; padding: 28px 12px; color: var(--muted); display: flex; flex-direction: column; gap: 10px; align-items: center }
+.empty strong { color: var(--ink); font-size: 1.05rem }
+.status { font-size: .8rem; color: var(--muted) }
+.toast { position: fixed; left: 50%; bottom: calc(20px + env(safe-area-inset-bottom, 0px)); transform: translateX(-50%); background: var(--ink); color: var(--bg); padding: 8px 18px; border-radius: 999px; font-size: .9rem; z-index: 20 }
+.diff { letter-spacing: 1px; color: var(--warn) }
+details summary { cursor: pointer; font-weight: 700 }
+code { font-family: var(--f-mono); font-size: .85em; background: var(--bg); padding: 1px 5px; border-radius: 4px; overflow-wrap: anywhere }
+@media (prefers-reduced-motion: reduce) { * { transition: none !important; animation: none !important } }
+@media (max-width: 520px) { .grid3 { grid-template-columns: 1fr } }
+@media (max-width: 480px) { .question { font-size: 1.15rem } .item { grid-template-columns: 1fr } .item .acts { grid-row: auto; grid-column: 1; justify-content: flex-start } }
+</style>
+
+<div class="wrap">
+  <header>
+    <h1>一問一答クイズ<small id="storeStatus" class="status"></small></h1>
+    <nav role="tablist">
+      <button id="tabPlay" role="tab" aria-selected="true" data-view="play">プレイ</button>
+      <button id="tabEdit" role="tab" aria-selected="false" data-view="edit">問題を管理</button>
+    </nav>
+  </header>
+
+  <!-- ===== 設定 ===== -->
+  <section id="viewSetup" class="panel">
+    <div class="row"><h2>ゲーム設定</h2><span class="spacer"></span><span class="note">登録問題 <span id="totalCount" class="count">0</span> 問</span></div>
+    <div class="field">
+      <span class="label">出題範囲 <em>（ジャンル → カテゴリ → サブカテゴリ。「すべて」にすると、その下をまとめて出題）</em></span>
+      <div class="grid3">
+        <select id="optG" aria-label="ジャンル"></select>
+        <select id="optC" aria-label="カテゴリ"></select>
+        <select id="optS" aria-label="サブカテゴリ"></select>
+      </div>
+    </div>
+    <div class="grid">
+      <div class="field">
+        <label class="label" for="optCount">問題数</label>
+        <select id="optCount">
+          <option value="5">5問</option><option value="10" selected>10問</option>
+          <option value="20">20問</option><option value="30">30問</option><option value="0">すべて</option>
+        </select>
+      </div>
+    </div>
+    <div class="field">
+      <span class="label">難易度</span>
+      <div class="seg">
+        <label><input type="radio" name="diff" value="0" checked><span>すべて</span></label>
+        <label><input type="radio" name="diff" value="1"><span>★ やさしい</span></label>
+        <label><input type="radio" name="diff" value="2"><span>★★ ふつう</span></label>
+        <label><input type="radio" name="diff" value="3"><span>★★★ むずかしい</span></label>
+      </div>
+    </div>
+    <div class="field">
+      <span class="label">制限時間（1問あたり）</span>
+      <div class="seg">
+        <label><input type="radio" name="time" value="0"><span>なし</span></label>
+        <label><input type="radio" name="time" value="10"><span>10秒</span></label>
+        <label><input type="radio" name="time" value="20" checked><span>20秒</span></label>
+        <label><input type="radio" name="time" value="30"><span>30秒</span></label>
+        <label><input type="radio" name="time" value="60"><span>60秒</span></label>
+      </div>
+    </div>
+    <div class="field">
+      <span class="label">その他</span>
+      <label class="check"><input type="checkbox" id="optShuffle" checked> 出題順をランダムにする</label>
+      <label class="check"><input type="checkbox" id="optLoose" checked> ひらがな／カタカナ、全角／半角、大文字／小文字、空白の違いを無視して判定</label>
+    </div>
+    <div class="row">
+      <button id="startBtn" class="btn primary big">スタート</button>
+      <span id="setupMsg" class="note"></span>
+    </div>
+  </section>
+
+  <!-- ===== ゲーム ===== -->
+  <section id="viewGame" hidden>
+    <div class="board">
+      <div class="board-top">
+        <span class="qnum" id="gNum">第1問</span>
+        <span id="gTags"></span>
+        <span class="tleft" id="gTime"></span>
+      </div>
+      <div class="timer" id="gTimer"><i id="gBar"></i></div>
+      <div class="question" id="gQ"></div>
+    </div>
+    <div class="panel" style="margin-top:14px">
+      <form id="ansForm" class="answer-row" autocomplete="off">
+        <input type="text" id="ansInput" placeholder="答えを入力して Enter" aria-label="答え">
+        <button class="btn primary" type="submit" id="ansBtn">回答</button>
+        <button class="btn" type="button" id="passBtn">パス</button>
+      </form>
+      <div id="verdict" class="verdict" hidden></div>
+      <div class="row">
+        <span class="note">正解 <span id="gScore" class="count">0</span></span>
+        <span class="spacer"></span>
+        <button class="btn" id="quitBtn" type="button">やめる</button>
+        <button class="btn primary" id="nextBtn" type="button" hidden>次の問題（Enter）</button>
+      </div>
+    </div>
+  </section>
+
+  <!-- ===== 結果 ===== -->
+  <section id="viewResult" class="panel" hidden>
+    <h2>結果</h2>
+    <div class="score">
+      <span class="big" id="rScore"></span>
+      <span class="note" id="rDetail"></span>
+    </div>
+
+    <div class="review" id="reviewBox">
+      <div class="row">
+        <h3>間違えた問題の復習 <span class="count" id="wrongCount"></span></h3>
+        <span class="spacer"></span>
+        <button class="btn small" id="revealAllBtn" type="button">答えをすべて表示</button>
+      </div>
+      <p class="note">まず自分で答えを思い出してから「答えを見る」で確かめましょう。</p>
+      <div class="list" id="wrongList"></div>
+      <div class="row">
+        <button class="btn primary" id="cardBtn" type="button">暗記カードで復習</button>
+        <button class="btn" id="retryWrongBtn" type="button">間違えた問題だけ再挑戦</button>
+      </div>
+    </div>
+    <p class="note" id="perfectMsg" hidden>全問正解です。復習する問題はありません。</p>
+
+    <details>
+      <summary>全問の結果</summary>
+      <div class="list" id="rList" style="margin-top:10px"></div>
+    </details>
+    <div class="row">
+      <button class="btn primary" id="retryBtn">同じ設定でもう一度</button>
+      <button class="btn" id="backBtn">設定に戻る</button>
+    </div>
+  </section>
+
+  <!-- ===== 暗記カード ===== -->
+  <section id="viewCards" hidden>
+    <div class="board">
+      <div class="board-top">
+        <span class="qnum">復習カード</span>
+        <span id="cTags"></span>
+        <span class="tleft" id="cLeft"></span>
+      </div>
+      <div class="question" id="cQ"></div>
+      <div class="reveal" id="cReveal" hidden>
+        <span class="ans" id="cAns"></span>
+        <span class="yours" id="cYours"></span>
+      </div>
+    </div>
+    <div class="panel" style="margin-top:14px">
+      <div class="row" id="cAskRow">
+        <button class="btn primary big" id="cShowBtn" type="button">答えを見る（Enter）</button>
+      </div>
+      <div class="row" id="cJudgeRow" hidden>
+        <button class="btn okb big" id="cGotBtn" type="button">覚えた（1）</button>
+        <button class="btn danger big" id="cAgainBtn" type="button">もう一度（2）</button>
+      </div>
+      <div class="row" id="cDoneRow" hidden>
+        <strong>復習が終わりました。</strong>
+        <button class="btn primary" id="cRetryBtn" type="button">間違えた問題に再挑戦</button>
+      </div>
+      <div class="row"><span class="spacer"></span><button class="btn" id="cBackBtn" type="button">結果に戻る</button></div>
+    </div>
+  </section>
+
+  <!-- ===== 問題を管理 ===== -->
+  <section id="viewEdit" class="stack" hidden>
+    <form class="panel" id="qForm" autocomplete="off">
+      <div class="row"><h2 id="qFormTitle">問題を追加</h2></div>
+      <div class="field">
+        <span class="label">分類 <em>（カテゴリ・サブカテゴリは空欄でもOK）</em></span>
+        <div class="grid3">
+          <input type="text" id="fG" list="dlG" placeholder="ジャンル（例：歴史）" aria-label="ジャンル" required>
+          <input type="text" id="fC" list="dlC" placeholder="カテゴリ（例：日本史）" aria-label="カテゴリ">
+          <input type="text" id="fS" list="dlS" placeholder="サブカテゴリ（例：江戸時代）" aria-label="サブカテゴリ">
+        </div>
+        <datalist id="dlG"></datalist><datalist id="dlC"></datalist><datalist id="dlS"></datalist>
+      </div>
+      <div class="field">
+        <span class="label">難易度</span>
+        <div class="seg">
+          <label><input type="radio" name="fDiff" value="1"><span>★</span></label>
+          <label><input type="radio" name="fDiff" value="2" checked><span>★★</span></label>
+          <label><input type="radio" name="fDiff" value="3"><span>★★★</span></label>
+        </div>
+      </div>
+      <div class="field">
+        <label class="label" for="fQ">問題文</label>
+        <textarea id="fQ" required></textarea>
+      </div>
+      <div class="field">
+        <label class="label" for="fA">答え（別解は / で区切る）</label>
+        <input type="text" id="fA" placeholder="例：徳川家康 / 家康" required>
+      </div>
+      <div class="row">
+        <button class="btn primary" type="submit" id="qSave">追加する</button>
+        <button class="btn" type="button" id="qCancel" hidden>編集をやめる</button>
+        <span id="formMsg" class="note"></span>
+      </div>
+    </form>
+
+    <div class="panel">
+      <details>
+        <summary>まとめて追加</summary>
+        <div style="display:flex;flex-direction:column;gap:10px;margin-top:12px">
+          <p class="note">1行に1問、<code>ジャンル&gt;カテゴリ&gt;サブカテゴリ,難易度(1〜3),問題文,答え</code> の形で書きます。カテゴリ・サブカテゴリ・難易度は省略できます（難易度を省略すると★★）。別解は / で区切ります。</p>
+          <p class="note">例：<code>歴史&gt;日本史&gt;江戸時代,1,江戸幕府を開いたのは？,徳川家康/家康</code></p>
+          <textarea id="bulk" rows="6" placeholder="ジャンル>カテゴリ>サブカテゴリ,難易度,問題文,答え"></textarea>
+          <div class="row"><button class="btn" id="bulkBtn" type="button">読み込む</button><span id="bulkMsg" class="note"></span></div>
+        </div>
+      </details>
+    </div>
+
+    <div class="panel">
+      <h2>系統ツリー</h2>
+      <div class="tree" id="tree"></div>
+    </div>
+
+    <div class="panel">
+      <div class="row"><h2>登録した問題</h2><span class="spacer"></span><span class="note"><span class="count" id="listCount">0</span> 問を表示</span></div>
+      <div class="grid3">
+        <select id="lfG" aria-label="ジャンルで絞り込む"></select>
+        <select id="lfC" aria-label="カテゴリで絞り込む"></select>
+        <select id="lfS" aria-label="サブカテゴリで絞り込む"></select>
+      </div>
+      <div class="list" id="qList"></div>
+    </div>
+  </section>
+</div>
+<div class="toast" id="toast" hidden></div>
+
+<script>
+(() => {
+  const $ = id => document.getElementById(id);
+  const DIFF = { 1: "★", 2: "★★", 3: "★★★" };
+  const DIFF_NAME = { 1: "やさしい", 2: "ふつう", 3: "むずかしい" };
+  const LEVELS = ["ジャンル", "カテゴリ", "サブカテゴリ"];
+  const NONE = "\u0000none";   // select value for questions that stop above this level
+  const PRESET_GENRES = ["ゲーム", "情報・テクノロジー", "科学・自然", "歴史", "地理", "社会・ニュース", "文化・芸術", "スポーツ",
+    "アニメ・漫画", "映画・音楽", "食べ物・料理", "生き物", "乗り物", "言葉・文学", "生活・雑学"];
+  // preset genres first in their fixed order, then any others the user typed, sorted
+  const genreOrder = names => {
+    const extra = [...new Set(names)].filter(n => n && !PRESET_GENRES.includes(n)).sort((a, b) => a.localeCompare(b, "ja"));
+    return [...PRESET_GENRES, ...extra];
+  };
+  const PRESET_CATS = {
+    "情報・テクノロジー": ["ITパスポート", "基本情報技術者試験", "応用情報技術者試験"],
+  };
+  // same idea one level down: a genre's preset categories first, then the rest sorted
+  const presetFirst = (preset, names) => {
+    const extra = [...new Set(names)].filter(n => n && !preset.includes(n)).sort((a, b) => a.localeCompare(b, "ja"));
+    return [...preset, ...extra];
+  };
+  const catOrder = (genre, names) => presetFirst(PRESET_CATS[genre] || [], names);
+  const PRESET_SUBS = {
+    "情報・テクノロジー›応用情報技術者試験": ["基礎理論", "ハードウェア", "OS", "ネットワーク", "データベース", "セキュリティ", "システム開発",
+      "プロジェクトマネジメント", "サービスマネジメント", "システム監査", "経営戦略", "企業活動", "法務", "システム戦略", "情報システム戦略"],
+  };
+  const subOrder = (genre, cat, names) => presetFirst(PRESET_SUBS[genre + "›" + cat] || [], names);
+  let questions = [];      // {id, path[1..3], genre, q, answers[], diff, createdAt}
+  let store = null;        // db collection or null (localStorage fallback)
+  let lastSettings = null, lastWrong = [];
+
+  // ---------- storage ----------
+  const LS_KEY = "quiz.questions.v1";
+  const lsLoad = () => { try { return JSON.parse(localStorage.getItem(LS_KEY) || "[]") } catch { return [] } };
+  const lsSave = () => { try { localStorage.setItem(LS_KEY, JSON.stringify(questions)) } catch {} };
+  const newId = () => "q" + Date.now().toString(36) + Math.random().toString(36).slice(2, 7);
+
+  async function saveQ(q) {
+    if (store) { const { id, ...body } = q; await store.doc(id).set(body) }
+    else { const i = questions.findIndex(x => x.id === q.id); i >= 0 ? questions[i] = q : questions.push(q); lsSave(); refresh() }
+  }
+  async function deleteQ(id) {
+    if (store) await store.doc(id).delete();
+    else { questions = questions.filter(x => x.id !== id); lsSave(); refresh() }
+  }
+
+  async function initStore() {
+    questions = lsLoad(); refresh();
+    $("storeStatus").textContent = "この端末に保存";
+    const db = window.claude?.use ? await window.claude.use("db").catch(() => null) : null;
+    if (!db) return;
+    store = db.collection("questions");
+    $("storeStatus").textContent = "クラウドに保存";
+    store.orderBy("createdAt").onSnapshot(snap => {
+      questions = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+      refresh();
+    }, () => { store = null; $("storeStatus").textContent = "この端末に保存"; questions = lsLoad(); refresh() });
+  }
+
+  // ---------- helpers ----------
+  const pathOf = q => (Array.isArray(q.path) && q.path.length ? q.path : [q.genre || "未分類"]);
+  const pathText = p => p.join(" › ");
+  // filter = array of up to 3 entries: "" (all) | NONE (no deeper level) | name
+  function matches(q, filter) {
+    const p = pathOf(q);
+    for (let i = 0; i < filter.length; i++) {
+      const f = filter[i];
+      if (!f) return true;
+      if (f === NONE) return p.length <= i;
+      if (p[i] !== f) return false;
+    }
+    return true;
+  }
+  function toast(msg) { const t = $("toast"); t.textContent = msg; t.hidden = false; clearTimeout(toast.t); toast.t = setTimeout(() => t.hidden = true, 1800) }
+  function el(tag, cls, text) { const e = document.createElement(tag); if (cls) e.className = cls; if (text != null) e.textContent = text; return e }
+  function opt(value, label) { const o = el("option", null, label); o.value = value; return o }
+  function normalize(s, loose) {
+    s = String(s).normalize("NFKC").trim();
+    if (!loose) return s;
+    return s.toLowerCase().replace(/\s+/g, "").replace(/[ァ-ヶ]/g, c => String.fromCharCode(c.charCodeAt(0) - 0x60));
+  }
+  const splitAnswers = s => s.split(/[\/／]/).map(x => x.trim()).filter(Boolean);
+  const cleanPath = parts => { const p = []; for (const x of parts) { const t = (x || "").trim(); if (!t) break; p.push(t) } return p };
+  function shuffle(a) { for (let i = a.length - 1; i > 0; i--) { const j = Math.random() * (i + 1) | 0; [a[i], a[j]] = [a[j], a[i]] } return a }
+  function tagsFor(q) {
+    const f = document.createDocumentFragment();
+    pathOf(q).forEach(p => f.append(el("span", "tag", p)));
+    f.append(el("span", "tag", DIFF[q.diff || 2]));
+    return f;
+  }
+
+  // ---------- cascading selects (setup + list filter) ----------
+  function cascade(ids, allLabels, onChange) {
+    const sels = ids.map($);
+    function fill() {
+      const prev = sels.map(s => s.value);
+      sels.forEach((sel, lvl) => {
+        const upper = sels.slice(0, lvl).map(s => s.value);
+        const blocked = lvl > 0 && (!upper[lvl - 1] || upper[lvl - 1] === NONE);
+        sel.replaceChildren();
+        const pool = questions.filter(q => matches(q, upper));
+        sel.append(opt("", `${allLabels[lvl]}（${pool.length}問）`));
+        if (!blocked) {
+          const found = pool.map(q => pathOf(q)[lvl]).filter(Boolean);
+          const names = lvl === 0 ? genreOrder(found) : lvl === 1 ? catOrder(upper[0], found) : subOrder(upper[0], upper[1], found);
+          names.forEach(n => sel.append(opt(n, `${n}（${pool.filter(q => pathOf(q)[lvl] === n).length}問）`)));
+          const direct = pool.filter(q => pathOf(q).length <= lvl).length;
+          if (lvl > 0 && direct && names.length) sel.append(opt(NONE, `（${LEVELS[lvl]}なし）（${direct}問）`));
+        }
+        sel.disabled = blocked;
+        if ([...sel.options].some(o => o.value === prev[lvl])) sel.value = prev[lvl];
+      });
+    }
+    sels.forEach((s, i) => s.addEventListener("change", () => { for (let j = i + 1; j < sels.length; j++) sels[j].value = ""; fill(); onChange() }));
+    return { fill, value: () => sels.map(s => s.value), set: v => { sels.forEach((s, i) => { s.value = v[i] || ""; fill() }) } };
+  }
+  const setupScope = cascade(["optG", "optC", "optS"], ["総合（全ジャンル）", "すべてのカテゴリ", "すべてのサブカテゴリ"], () => updateSetupMsg());
+  const listScope = cascade(["lfG", "lfC", "lfS"], ["すべてのジャンル", "すべてのカテゴリ", "すべてのサブカテゴリ"], () => renderList());
+
+  // ---------- views ----------
+  const PLAY_VIEWS = ["viewSetup", "viewGame", "viewResult", "viewCards"];
+  function show(view) {
+    const play = view !== "edit";
+    $("tabPlay").setAttribute("aria-selected", play); $("tabEdit").setAttribute("aria-selected", !play);
+    $("viewEdit").hidden = play;
+    if (play) { if (!game && PLAY_VIEWS.every(v => $(v).hidden)) showOnly("viewSetup") }
+    else PLAY_VIEWS.forEach(v => $(v).hidden = true);
+  }
+  function showOnly(id) { PLAY_VIEWS.forEach(v => $(v).hidden = v !== id) }
+  document.querySelectorAll("nav button").forEach(b => b.onclick = () => {
+    if (b.dataset.view === "edit") { if (game) endGame(true); cards = null; PLAY_VIEWS.forEach(v => $(v).hidden = true) }
+    show(b.dataset.view);
+  });
+
+  function refresh() {
+    $("totalCount").textContent = questions.length;
+    setupScope.fill(); listScope.fill();
+    fillDatalists(); renderTree(); renderList(); updateSetupMsg();
+  }
+
+  // ---------- manage ----------
+  function fillDatalists() {
+    const g = $("fG").value.trim(), c = $("fC").value.trim();
+    const uniq = arr => [...new Set(arr.filter(Boolean))].sort((a, b) => a.localeCompare(b, "ja"));
+    const ps = questions.map(pathOf);
+    const fillDl = (id, vals) => $(id).replaceChildren(...vals.map(v => opt(v, v)));
+    fillDl("dlG", genreOrder(ps.map(p => p[0])));
+    fillDl("dlC", catOrder(g, ps.filter(p => p[0] === g).map(p => p[1])));
+    fillDl("dlS", subOrder(g, c, ps.filter(p => p[0] === g && p[1] === c).map(p => p[2])));
+  }
+  $("fG").addEventListener("input", fillDatalists); $("fC").addEventListener("input", fillDatalists);
+
+  function renderTree() {
+    const t = $("tree"); t.replaceChildren();
+    const root = new Map(genreOrder(questions.map(q => pathOf(q)[0])).map(g =>
+      [g, { n: 0, kids: new Map(catOrder(g, []).map(c =>
+        [c, { n: 0, kids: new Map(subOrder(g, c, []).map(s => [s, { n: 0, kids: new Map() }])) }])) }]));
+    questions.forEach(q => {
+      let node = root;
+      pathOf(q).forEach(name => {
+        if (!node.has(name)) node.set(name, { n: 0, kids: new Map() });
+        const x = node.get(name); x.n++; node = x.kids;
+      });
+    });
+    const walk = (map, depth, up) => {
+      const names = depth === 1 ? genreOrder(map.keys()) : depth === 2 ? catOrder(up[0], map.keys()) : subOrder(up[0], up[1], map.keys());
+      names.forEach(name => {
+        const x = map.get(name);
+        const row = el("div", `n l${depth}`); row.append(el("span", null, name), el("span", "count", `${x.n}問`)); t.append(row);
+        walk(x.kids, depth + 1, [...up, name]);
+      });
+    };
+    walk(root, 1, []);
+  }
+
+  let pendingDelete = null;
+  function renderList() {
+    const f = listScope.value();
+    const items = questions.filter(q => matches(q, f));
+    $("listCount").textContent = items.length;
+    const list = $("qList"); list.replaceChildren();
+    if (!items.length) {
+      const e = el("div", "empty");
+      e.append(el("strong", null, questions.length ? "この分類に問題はありません" : "まだ問題がありません"),
+        el("span", null, questions.length ? "絞り込みを変えてみてください。" : "上のフォームから問題文と答えを登録すると、ここに一覧が出ます。"));
+      list.append(e); return;
+    }
+    items.forEach((q, i) => {
+      const it = el("div", "item");
+      const meta = el("div", "crumb"); meta.append(`${i + 1}. `, el("b", null, pathText(pathOf(q))), " ", el("span", "diff", DIFF[q.diff] || "★★"));
+      const acts = el("div", "acts");
+      const eb = el("button", "btn small", "編集"); eb.type = "button"; eb.onclick = () => startEdit(q);
+      const db = el("button", "btn small danger", pendingDelete === q.id ? "本当に削除" : "削除"); db.type = "button";
+      db.onclick = async () => {
+        if (pendingDelete !== q.id) { pendingDelete = q.id; renderList(); return }
+        pendingDelete = null;
+        try { await deleteQ(q.id); toast("削除しました") } catch { toast("削除できませんでした") }
+      };
+      acts.append(eb, db);
+      it.append(meta, acts, el("div", "q", q.q), el("div", "a", "答え：" + q.answers.join(" / ")));
+      list.append(it);
+    });
+  }
+
+  let editing = null;
+  function startEdit(q) {
+    editing = q.id;
+    const p = pathOf(q);
+    $("fG").value = p[0] || ""; $("fC").value = p[1] || ""; $("fS").value = p[2] || "";
+    $("fQ").value = q.q; $("fA").value = q.answers.join(" / ");
+    document.querySelector(`input[name=fDiff][value="${q.diff || 2}"]`).checked = true;
+    $("qFormTitle").textContent = "問題を編集"; $("qSave").textContent = "保存する"; $("qCancel").hidden = false;
+    fillDatalists();
+    $("qForm").scrollIntoView({ behavior: "smooth", block: "start" }); $("fQ").focus();
+  }
+  function resetForm(keepPath) {
+    editing = null; const keep = ["fG", "fC", "fS"].map(id => $(id).value);
+    $("qForm").reset(); if (keepPath) ["fG", "fC", "fS"].forEach((id, i) => $(id).value = keep[i]);
+    $("qFormTitle").textContent = "問題を追加"; $("qSave").textContent = "追加する"; $("qCancel").hidden = true;
+  }
+  $("qCancel").onclick = () => resetForm(false);
+  $("qForm").onsubmit = async e => {
+    e.preventDefault();
+    const path = cleanPath([$("fG").value, $("fC").value, $("fS").value]);
+    const q = $("fQ").value.trim(), answers = splitAnswers($("fA").value);
+    if (!path.length || !q || !answers.length) { $("formMsg").textContent = "ジャンル・問題文・答えを入力してください。"; return }
+    if (!$("fC").value.trim() && $("fS").value.trim()) { $("formMsg").textContent = "サブカテゴリを使うときは、カテゴリも入力してください。"; return }
+    const diff = +document.querySelector("input[name=fDiff]:checked").value;
+    const old = editing && questions.find(x => x.id === editing);
+    const item = { id: editing || newId(), path, genre: path[0], q, answers, diff, createdAt: old?.createdAt || Date.now() };
+    try { await saveQ(item); toast(editing ? "保存しました" : "追加しました"); $("formMsg").textContent = ""; resetForm(true); $("fQ").focus() }
+    catch (err) { $("formMsg").textContent = err?.code === "quota_exceeded" ? "保存できる問題数の上限に達しました。不要な問題を削除してください。" : "保存できませんでした。もう一度試してください。" }
+  };
+  $("bulkBtn").onclick = async () => {
+    const lines = $("bulk").value.split(/\r?\n/).map(l => l.trim()).filter(Boolean);
+    let ok = 0; const bad = [];
+    for (const [n, line] of lines.entries()) {
+      const p = line.split(/[,，\t]/).map(s => s.trim());
+      let head, diff = 2, q, a;
+      if (p.length >= 4 && /^[123]$/.test(p[1])) { head = p[0]; diff = +p[1]; a = p[p.length - 1]; q = p.slice(2, -1).join(",") }
+      else if (p.length >= 3) { head = p[0]; a = p[p.length - 1]; q = p.slice(1, -1).join(",") }
+      const path = head ? cleanPath(head.split(/[>＞›]/)).slice(0, 3) : [];
+      const answers = a ? splitAnswers(a) : [];
+      if (!path.length || !q || !answers.length) { bad.push(n + 1); continue }
+      try { await saveQ({ id: newId(), path, genre: path[0], q, answers, diff, createdAt: Date.now() + n }); ok++ } catch { bad.push(n + 1) }
+    }
+    $("bulkMsg").textContent = `${ok}問を追加しました。` + (bad.length ? ` 読み込めなかった行：${bad.join(", ")}` : "");
+    if (!bad.length) $("bulk").value = "";
+  };
+
+  // ---------- setup ----------
+  const radio = name => +document.querySelector(`input[name=${name}]:checked`).value;
+  function readSettings() {
+    return { scope: setupScope.value(), diff: radio("diff"), time: radio("time"), count: +$("optCount").value, shuffle: $("optShuffle").checked, loose: $("optLoose").checked };
+  }
+  const pool = s => questions.filter(q => matches(q, s.scope) && (!s.diff || (q.diff || 2) === s.diff));
+  function scopeLabel(scope) {
+    const parts = scope.filter(x => x && x !== NONE);
+    return parts.length ? parts.join(" › ") : "総合";
+  }
+  function updateSetupMsg() {
+    const n = pool(readSettings()).length;
+    $("setupMsg").textContent = questions.length === 0 ? "まず「問題を管理」で問題を登録してください。" : n === 0 ? "この条件に合う問題がありません。" : `条件に合う問題：${n}問`;
+    $("startBtn").disabled = n === 0;
+  }
+  $("viewSetup").addEventListener("change", updateSetupMsg);
+  try {
+    const s = JSON.parse(localStorage.getItem("quiz.settings") || "null");
+    if (s) {
+      $("optCount").value = s.count; $("optShuffle").checked = s.shuffle; $("optLoose").checked = s.loose;
+      const d = document.querySelector(`input[name=diff][value="${s.diff}"]`); if (d) d.checked = true;
+      const t = document.querySelector(`input[name=time][value="${s.time}"]`); if (t) t.checked = true;
+    }
+  } catch {}
+
+  // ---------- game ----------
+  let game = null, timerId = null;
+  function startGame(s, list) {
+    lastSettings = s;
+    try { localStorage.setItem("quiz.settings", JSON.stringify(s)) } catch {}
+    let qs = list ? [...list] : pool(s);
+    if (s.shuffle) qs = shuffle(qs);
+    if (s.count && !list) qs = qs.slice(0, s.count);
+    if (!qs.length) return;
+    cards = null;
+    game = { s, qs, i: 0, results: [], answered: false };
+    show("play"); showOnly("viewGame"); $("gTimer").hidden = !s.time; $("gTime").hidden = !s.time;
+    nextQuestion();
+  }
+  function setAnswerEnabled(on) { $("ansInput").disabled = !on; $("passBtn").disabled = !on; $("ansBtn").disabled = !on }
+  function nextQuestion() {
+    const { qs, i, s } = game, q = qs[i];
+    game.answered = false;
+    $("gNum").textContent = `第${i + 1}問 / ${qs.length}`;
+    $("gTags").replaceChildren(tagsFor(q));
+    $("gQ").textContent = q.q;
+    $("verdict").hidden = true; $("nextBtn").hidden = true;
+    $("ansInput").value = ""; setAnswerEnabled(true);
+    $("gScore").textContent = game.results.filter(r => r.ok).length;
+    $("ansInput").focus();
+    clearInterval(timerId);
+    if (s.time) {
+      const end = performance.now() + s.time * 1000;
+      const tick = () => {
+        const left = Math.max(0, end - performance.now());
+        $("gBar").style.transform = `scaleX(${left / (s.time * 1000)})`;
+        $("gTimer").classList.toggle("low", left < 5000);
+        $("gTime").textContent = `残り ${Math.ceil(left / 1000)} 秒`;
+        if (left <= 0) { clearInterval(timerId); judge(null, "time") }
+      };
+      tick(); timerId = setInterval(tick, 100);
+    }
+  }
+  function judge(input, why) {
+    if (!game || game.answered) return;
+    game.answered = true; clearInterval(timerId);
+    const q = game.qs[game.i];
+    const ok = input != null && input.trim() !== "" && q.answers.some(a => normalize(a, game.s.loose) === normalize(input, game.s.loose));
+    game.results.push({ q, input: input ?? "", ok, why });
+    const v = $("verdict"); v.className = "verdict " + (ok ? "ok" : "ng"); v.replaceChildren();
+    v.append(el("b", null, ok ? "正解！" : why === "time" ? "時間切れ" : why === "pass" ? "パス" : "不正解"));
+    if (!ok) v.append(el("span", "detail", "正解：" + q.answers.join(" / ")));
+    else if (q.answers.length > 1) v.append(el("span", "detail", "別解：" + q.answers.join(" / ")));
+    v.hidden = false;
+    setAnswerEnabled(false);
+    $("gScore").textContent = game.results.filter(r => r.ok).length;
+    $("nextBtn").textContent = game.i + 1 < game.qs.length ? "次の問題（Enter）" : "結果を見る（Enter）";
+    $("nextBtn").hidden = false; $("nextBtn").focus();
+  }
+  $("ansForm").onsubmit = e => { e.preventDefault(); if ($("ansInput").value.trim()) judge($("ansInput").value, "answer") };
+  $("passBtn").onclick = () => judge(null, "pass");
+  $("nextBtn").onclick = () => { if (!game) return; game.i++; game.i < game.qs.length ? nextQuestion() : endGame(false) };
+  $("quitBtn").onclick = () => endGame(!(game && game.results.length));
+
+  const howText = r => r.why === "time" ? "時間切れ" : r.why === "pass" ? "パス" : `あなたの答え：${r.input}`;
+  function endGame(silent) {
+    clearInterval(timerId);
+    const g = game; game = null;
+    if (silent || !g) { showOnly("viewSetup"); return }
+    const ok = g.results.filter(r => r.ok).length, n = g.results.length;
+    $("rScore").replaceChildren(`${ok}`, el("small", null, ` / ${n}`));
+    const s = g.s;
+    $("rDetail").textContent = `正答率 ${n ? Math.round(ok / n * 100) : 0}% ・ ${scopeLabel(s.scope)} ・ 難易度 ${s.diff ? DIFF_NAME[s.diff] : "すべて"} ・ 制限時間 ${s.time ? s.time + "秒" : "なし"}`;
+
+    // all results
+    const list = $("rList"); list.replaceChildren();
+    g.results.forEach((r, i) => {
+      const row = el("div", "res");
+      row.append(el("span", "mark " + (r.ok ? "ok" : "ng"), r.ok ? "○" : "×"), el("span", "qt", `${i + 1}. ${r.q.q}`));
+      row.append(el("span", "sub", `${r.ok ? "あなたの答え：" + r.input : howText(r)} ／ 正解：${r.q.answers.join(" / ")}`));
+      list.append(row);
+    });
+
+    // wrong-answer review
+    const wrong = g.results.filter(r => !r.ok);
+    lastWrong = wrong;
+    $("reviewBox").hidden = !wrong.length; $("perfectMsg").hidden = !!wrong.length;
+    $("wrongCount").textContent = `${wrong.length}問`;
+    const wl = $("wrongList"); wl.replaceChildren();
+    wrong.forEach((r, i) => {
+      const row = el("div", "res");
+      row.append(el("span", "mark ng", "×"), el("span", "qt", `${i + 1}. ${r.q.q}`));
+      row.append(el("span", "crumb", `${pathText(pathOf(r.q))} ・ ${howText(r)}`));
+      const h = el("div", "hiddenans");
+      const btn = el("button", "btn small", "答えを見る"); btn.type = "button";
+      const v = el("span", "ansv", r.q.answers.join(" / ")); v.hidden = true;
+      btn.onclick = () => { v.hidden = !v.hidden; btn.textContent = v.hidden ? "答えを見る" : "隠す" };
+      h.append(btn, v); row.append(h);
+      wl.append(row);
+    });
+    showOnly("viewResult");
+  }
+  $("revealAllBtn").onclick = () => {
+    const vs = [...$("wrongList").querySelectorAll(".ansv")], showAll = vs.some(v => v.hidden);
+    vs.forEach(v => { v.hidden = !showAll; v.previousSibling.textContent = showAll ? "隠す" : "答えを見る" });
+    $("revealAllBtn").textContent = showAll ? "答えをすべて隠す" : "答えをすべて表示";
+  };
+  $("startBtn").onclick = () => startGame(readSettings());
+  $("retryBtn").onclick = () => startGame(lastSettings);
+  $("retryWrongBtn").onclick = () => startGame(lastSettings, lastWrong.map(r => r.q));
+  $("backBtn").onclick = () => showOnly("viewSetup");
+
+  // ---------- flashcards ----------
+  let cards = null; // {queue:[result], done:number, total}
+  function startCards() {
+    if (!lastWrong.length) return;
+    cards = { queue: shuffle([...lastWrong]), done: 0, total: lastWrong.length, revealed: false };
+    showOnly("viewCards"); renderCard();
+  }
+  function renderCard() {
+    const finished = !cards.queue.length;
+    $("cAskRow").hidden = finished || cards.revealed; $("cJudgeRow").hidden = finished || !cards.revealed; $("cDoneRow").hidden = !finished;
+    $("cLeft").textContent = `覚えた ${cards.done} / ${cards.total}`;
+    if (finished) { $("cQ").textContent = "すべてのカードを覚えました！"; $("cTags").replaceChildren(); $("cReveal").hidden = true; $("cRetryBtn").focus(); return }
+    const r = cards.queue[0];
+    $("cTags").replaceChildren(tagsFor(r.q));
+    $("cQ").textContent = r.q.q;
+    $("cAns").textContent = r.q.answers.join(" / ");
+    $("cYours").textContent = howText(r);
+    $("cReveal").hidden = !cards.revealed;
+    (cards.revealed ? $("cGotBtn") : $("cShowBtn")).focus();
+  }
+  function cardJudge(got) {
+    if (!cards || !cards.revealed || !cards.queue.length) return;
+    const r = cards.queue.shift();
+    if (got) cards.done++; else cards.queue.push(r);
+    cards.revealed = false; renderCard();
+  }
+  $("cardBtn").onclick = startCards;
+  $("cShowBtn").onclick = () => { if (cards) { cards.revealed = true; renderCard() } };
+  $("cGotBtn").onclick = () => cardJudge(true);
+  $("cAgainBtn").onclick = () => cardJudge(false);
+  $("cRetryBtn").onclick = () => startGame(lastSettings, lastWrong.map(r => r.q));
+  $("cBackBtn").onclick = () => { cards = null; showOnly("viewResult") };
+
+  document.addEventListener("keydown", e => {
+    if (e.isComposing || e.target.matches("input, textarea, select")) return;
+    if (game?.answered && e.key === "Enter" && document.activeElement !== $("nextBtn")) { e.preventDefault(); $("nextBtn").click() }
+    if (cards && !$("viewCards").hidden) {
+      if (!cards.revealed && (e.key === "Enter" || e.key === " ") && document.activeElement !== $("cShowBtn")) { e.preventDefault(); $("cShowBtn").click() }
+      else if (cards.revealed && e.key === "1") cardJudge(true);
+      else if (cards.revealed && e.key === "2") cardJudge(false);
+    }
+  });
+
+  initStore();
+})();
+</script>
+
+</body>
+</html>
