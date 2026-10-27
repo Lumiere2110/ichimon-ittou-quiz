@@ -423,7 +423,26 @@ code { font-family: var(--f-mono); font-size: .85em; background: var(--bg); padd
   const LS_KEY = "quiz.questions.v1";
   // first visit (nothing saved yet) starts from the bundled questions, if the page ships any
   const seed = () => (window.QUIZ_SEED || []).map(q => ({ ...q }));
-  const lsLoad = () => { try { const raw = localStorage.getItem(LS_KEY); return raw === null ? seed() : JSON.parse(raw) } catch { return seed() } };
+  // bundled questions added in a later release are merged in once; ones the viewer already saw (even if deleted since) stay out
+  const SEEN_KEY = "quiz.seedSeen.v1";
+  function lsLoad() {
+    try {
+      const raw = localStorage.getItem(LS_KEY), bundled = seed();
+      if (!bundled.length) return raw === null ? [] : JSON.parse(raw);
+      let list = raw === null ? [] : JSON.parse(raw);
+      const seenRaw = localStorage.getItem(SEEN_KEY);
+      // before seen-tracking existed, everything already stored counts as seen
+      const seen = new Set(seenRaw ? JSON.parse(seenRaw) : raw === null ? [] : list.map(q => q.id));
+      const fresh = bundled.filter(q => !seen.has(q.id) && !list.some(x => x.id === q.id));
+      if (fresh.length || raw === null) {
+        list = [...list, ...fresh];
+        localStorage.setItem(LS_KEY, JSON.stringify(list));
+      }
+      bundled.forEach(q => seen.add(q.id));
+      localStorage.setItem(SEEN_KEY, JSON.stringify([...seen]));
+      return list;
+    } catch { return seed() }
+  }
   // throws when the browser refuses (usually storage full), so callers can tell the user
   function lsCommit(next) {
     try { localStorage.setItem(LS_KEY, JSON.stringify(next)) }
