@@ -392,7 +392,7 @@ code { font-family: var(--f-mono); font-size: .85em; background: var(--bg); padd
   const LEVELS = ["ジャンル", "カテゴリ", "サブカテゴリ"];
   const NONE = "\u0000none";   // select value for questions that stop above this level
   const PRESET_GENRES = ["ゲーム", "情報・テクノロジー", "科学・自然", "歴史", "地理", "社会・ニュース", "文化・芸術", "スポーツ",
-    "アニメ・漫画", "映画・音楽", "食べ物・料理", "生き物", "乗り物", "言葉・文学", "生活・雑学"];
+    "アニメ・漫画", "映画・音楽", "食べ物・料理", "生き物", "乗り物", "言葉・文学", "生活・雑学", "心理・人間"];
   // preset genres first in their fixed order, then any others the user typed, sorted
   const genreOrder = names => {
     const extra = [...new Set(names)].filter(n => n && !PRESET_GENRES.includes(n)).sort((a, b) => a.localeCompare(b, "ja"));
@@ -403,6 +403,7 @@ code { font-family: var(--f-mono); font-size: .85em; background: var(--bg); padd
     "情報・テクノロジー": ["ITパスポート", "基本情報技術者試験", "応用情報技術者試験", "写真・映像"],
     "科学・自然": ["健康・医療"],
     "生活・雑学": ["暮らし", "健康", "お金・買い物", "食べ物", "言葉・コミュニケーション", "身近な科学", "日本の習慣・文化", "一般雑学", "言葉・考え方", "その他"],
+    "心理・人間": ["心理学"],
   };
   // same idea one level down: a genre's preset categories first, then the rest sorted
   const presetFirst = (preset, names) => {
@@ -419,6 +420,7 @@ code { font-family: var(--f-mono); font-size: .85em; background: var(--bg); padd
     "生活・雑学›健康": ["心・感情"],
     "生活・雑学›一般雑学": ["名前・由来"],
     "生活・雑学›言葉・考え方": ["哲学・意識問題", "言葉の意味"],
+    "心理・人間›心理学": ["心理効果", "認知バイアス"],
   };
   const subOrder = (genre, cat, names) => presetFirst(PRESET_SUBS[genre + "›" + cat] || [], names);
   // {id, path[1..3], genre, q, answers[], slots?[[...]], ordered?, image?(data URL), diff, createdAt}
