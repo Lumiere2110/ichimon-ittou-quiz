@@ -242,6 +242,14 @@ code { font-family: var(--f-mono); font-size: .85em; background: var(--bg); padd
       <label class="check"><input type="checkbox" id="optShuffle" checked> 出題順をランダムにする</label>
       <label class="check"><input type="checkbox" id="optLoose" checked> ゆるく判定する（ひらがな／カタカナ、全角／半角、大文字／小文字、空白、記号、「ー」、小さい文字の違いを無視し、少しの打ち間違いも正解にする）</label>
     </div>
+    <div class="field">
+      <span class="label">パスのキー</span>
+      <div class="row">
+        <button class="btn small" id="passKeyBtn" type="button">なし</button>
+        <button class="btn small" id="passKeyClear" type="button">解除</button>
+        <span class="note" id="passKeyMsg">ボタンを押してから、パスに使いたいキーを押してください。</span>
+      </div>
+    </div>
     <div class="row">
       <button id="startBtn" class="btn primary big">スタート</button>
       <span id="setupMsg" class="note"></span>
@@ -967,14 +975,17 @@ code { font-family: var(--f-mono); font-size: .85em; background: var(--bg); padd
     const q = game.qs[game.i], need = slotsOf(q).length;
     const inputs = why === "pass" ? ansInputs().map(() => "") : ansInputs().map(i => i.value);
     const hitsFor = matchSlots(q, inputs, game.s.loose);
-    const hits = hitsFor.filter(Boolean).length, ok = hits === need;
+    // correct only when every required answer is matched (each box filled and paired with a different answer)
+    const hits = hitsFor.filter(Boolean).length;
+    const ok = need > 0 && hits === need && inputs.filter(s => s.trim()).length >= need;
+    const partial = need > 1 && !ok && hits ? `全${need}つのうち${hits}つだけ合っています` : "";
     ansInputs().forEach((inp, k) => { inp.classList.remove("hit", "miss"); if (inputs[k].trim()) inp.classList.add(hitsFor[k] ? "hit" : "miss") });
     const v = $("verdict"); v.className = "verdict " + (ok ? "ok" : "ng"); v.replaceChildren();
     // a wrong answer with tries left: say so and let them answer again while the timer keeps running
     const flim = failLimit(game.s);
     if (why === "answer" && !ok && (flim < 0 || game.fails < flim)) {
       game.fails++;
-      v.append(el("b", null, need > 1 && hits ? `ちがいます（${hits} / ${need} 正解）` : "ちがいます"),
+      v.append(el("b", null, partial ? `ちがいます（${partial}）` : "ちがいます"),
         el("span", "detail", flim < 0 ? "もう一度答えられます。" : `あと ${flim - game.fails + 1} 回答えられます。`));
       v.hidden = false;
       const retry = ansInputs().find((inp, k) => !hitsFor[k]) || ansInputs()[0];
@@ -984,8 +995,8 @@ code { font-family: var(--f-mono); font-size: .85em; background: var(--bg); padd
     game.answered = true; clearInterval(timerId);
     const typed = inputs.map(s => s.trim()).filter(Boolean);
     game.results.push({ q, input: typed.join("、"), hits, ok, why: ok ? "answer" : why, tries: game.fails + (why === "answer" ? 1 : 0) });
-    const label = ok ? "正解！" : why === "pass" ? "パス" : why === "time" && !typed.length ? "時間切れ" : "不正解";
-    v.append(el("b", null, need > 1 && !ok && hits ? `${label}（${hits} / ${need} 正解）` : label));
+    const label = ok ? "正解！" : why === "pass" ? "パス" : why === "time" ? "時間切れ・不正解" : "不正解";
+    v.append(el("b", null, partial ? `${label}（${partial}）` : label));
     if (!ok) v.append(el("span", "detail", "正解：" + fmtAnswers(q)));
     else if (need === 1 && slotsOf(q)[0].length > 1) v.append(el("span", "detail", "別解：" + fmtAnswers(q)));
     const lim = missLimit(game.s);
@@ -999,11 +1010,48 @@ code { font-family: var(--f-mono); font-size: .85em; background: var(--bg); padd
   }
   $("ansForm").onsubmit = e => { e.preventDefault(); if (ansInputs().some(i => i.value.trim())) judge("answer") };
   $("passBtn").onclick = () => judge("pass");
+
+  // ---------- pass shortcut key (per browser) ----------
+  const KEY_NAMES = { Escape: "Esc", " ": "Space", ArrowUp: "↑", ArrowDown: "↓", ArrowLeft: "←", ArrowRight: "→", Delete: "Del" };
+  const keyOf = e => ({ key: e.key, ctrl: e.ctrlKey, alt: e.altKey, shift: e.shiftKey, meta: e.metaKey });
+  const keyLabel = k => !k ? "なし" : [k.ctrl && "Ctrl", k.alt && "Alt", k.shift && "Shift", k.meta && "Meta",
+    KEY_NAMES[k.key] || (k.key.length === 1 ? k.key.toUpperCase() : k.key)].filter(Boolean).join("+");
+  const sameKey = (a, b) => a.key.toLowerCase() === b.key.toLowerCase() && a.ctrl === b.ctrl && a.alt === b.alt && a.shift === b.shift && a.meta === b.meta;
+  let passKey = null, capturingKey = false;
+  try { passKey = JSON.parse(localStorage.getItem("quiz.passKey") || "null") } catch {}
+  function showPassKey() {
+    $("passKeyBtn").textContent = keyLabel(passKey);
+    $("passBtn").textContent = passKey ? `パス（${keyLabel(passKey)}）` : "パス";
+  }
+  function setPassKey(k) {
+    passKey = k; showPassKey();
+    try { k ? localStorage.setItem("quiz.passKey", JSON.stringify(k)) : localStorage.removeItem("quiz.passKey") } catch {}
+  }
+  $("passKeyBtn").onclick = () => { capturingKey = true; $("passKeyBtn").textContent = "キーを押してください…"; $("passKeyMsg").textContent = "" };
+  $("passKeyClear").onclick = () => { capturingKey = false; setPassKey(null); $("passKeyMsg").textContent = "パスのキーを解除しました。" };
+  document.addEventListener("keydown", e => {
+    if (e.isComposing) return;
+    if (capturingKey) {
+      if (["Control", "Shift", "Alt", "Meta"].includes(e.key)) return;   // wait for the real key of a combination
+      e.preventDefault(); capturingKey = false;
+      const k = keyOf(e), plain = !k.ctrl && !k.alt && !k.meta;
+      // keys used for typing an answer can't be the pass key on their own
+      if (plain && (e.key.length === 1 || ["Enter", "Backspace", "Tab"].includes(e.key))) {
+        showPassKey();
+        $("passKeyMsg").textContent = "文字キー・Enter・Backspace・Tab は答えの入力に使うので、そのままでは設定できません。Ctrl や Alt と組み合わせるか、Esc などを使ってください。";
+        return;
+      }
+      setPassKey(k); $("passKeyMsg").textContent = `パスのキーを「${keyLabel(k)}」にしました。`;
+      return;
+    }
+    if (passKey && game && !game.answered && sameKey(keyOf(e), passKey)) { e.preventDefault(); judge("pass") }
+  });
+  showPassKey();
   $("nextBtn").onclick = () => { if (!game) return; game.i++; game.i < game.qs.length && !game.over ? nextQuestion() : endGame(false) };
   $("quitBtn").onclick = () => endGame(!(game && game.results.length));
 
   const howText = r => {
-    const part = isMulti(r.q) && !r.ok && r.hits ? `（${r.hits} / ${slotsOf(r.q).length} 正解）` : "";
+    const part = isMulti(r.q) && !r.ok && r.hits ? `（全${slotsOf(r.q).length}つのうち${r.hits}つだけ合っていた）` : "";
     const tries = r.tries > 1 ? (r.ok ? `・${r.tries}回目で正解` : `・${r.tries}回答えた`) : "";
     if (r.why === "pass") return "パス" + tries;
     if (r.why === "time" && !r.input) return "時間切れ" + tries;
