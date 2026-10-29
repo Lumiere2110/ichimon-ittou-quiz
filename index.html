@@ -47,6 +47,7 @@ nav button[aria-selected="true"] { background: var(--ink); color: var(--bg) }
 .panel { background: var(--surface); border: 1px solid var(--line); border-radius: 14px; padding: 20px; display: flex; flex-direction: column; gap: 16px }
 .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 14px 18px }
 .grid3 { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 10px }
+.pick { display: flex; flex-direction: column; gap: 6px; min-width: 0 }
 .field { display: flex; flex-direction: column; gap: 6px; min-width: 0 }
 .label { font-size: .75rem; font-weight: 700; color: var(--muted); letter-spacing: .08em }
 .label em { font-style: normal; font-weight: 500; letter-spacing: 0 }
@@ -360,13 +361,15 @@ code { font-family: var(--f-mono); font-size: .85em; background: var(--bg); padd
     <form class="panel" id="qForm" autocomplete="off">
       <div class="row"><h2 id="qFormTitle">問題を追加</h2></div>
       <div class="field">
-        <span class="label">分類 <em>（カテゴリ・サブカテゴリは空欄でもOK）</em></span>
+        <span class="label">分類 <em>（一覧から選ぶか「＋ 新しく入力」で追加。カテゴリ・サブカテゴリはなしでもOK）</em></span>
         <div class="grid3">
-          <input type="text" id="fG" list="dlG" placeholder="ジャンル（例：歴史）" aria-label="ジャンル" required>
-          <input type="text" id="fC" list="dlC" placeholder="カテゴリ（例：日本史）" aria-label="カテゴリ">
-          <input type="text" id="fS" list="dlS" placeholder="サブカテゴリ（例：江戸時代）" aria-label="サブカテゴリ">
+          <div class="pick"><select id="sG" aria-label="ジャンルを選ぶ"></select>
+            <input type="text" id="fG" placeholder="新しいジャンル（例：歴史）" aria-label="ジャンル" hidden></div>
+          <div class="pick"><select id="sC" aria-label="カテゴリを選ぶ"></select>
+            <input type="text" id="fC" placeholder="新しいカテゴリ（例：日本史）" aria-label="カテゴリ" hidden></div>
+          <div class="pick"><select id="sS" aria-label="サブカテゴリを選ぶ"></select>
+            <input type="text" id="fS" placeholder="新しいサブカテゴリ（例：江戸時代）" aria-label="サブカテゴリ" hidden></div>
         </div>
-        <datalist id="dlG"></datalist><datalist id="dlC"></datalist><datalist id="dlS"></datalist>
       </div>
       <div class="field">
         <span class="label">難易度</span>
@@ -706,15 +709,34 @@ code { font-family: var(--f-mono); font-size: .85em; background: var(--bg); padd
   }
 
   // ---------- manage ----------
+  // each level is a select of known names plus "new"; the text input behind it holds the value and shows only for "new"
+  const NEW_OPT = "\u0000new";
+  const pickers = [["fG", "sG", "ジャンルを選んでください"], ["fC", "sC", "（カテゴリなし）"], ["fS", "sS", "（サブカテゴリなし）"]];
+  const newMode = [false, false, false];
   function fillDatalists() {
     const g = $("fG").value.trim(), c = $("fC").value.trim();
-    const uniq = arr => [...new Set(arr.filter(Boolean))].sort((a, b) => a.localeCompare(b, "ja"));
     const ps = questions.map(pathOf);
-    const fillDl = (id, vals) => $(id).replaceChildren(...vals.map(v => opt(v, v)));
-    fillDl("dlG", genreOrder(ps.map(p => p[0])));
-    fillDl("dlC", catOrder(g, ps.filter(p => p[0] === g).map(p => p[1])));
-    fillDl("dlS", subOrder(g, c, ps.filter(p => p[0] === g && p[1] === c).map(p => p[2])));
+    const lists = [genreOrder(ps.map(p => p[0])),
+      g ? catOrder(g, ps.filter(p => p[0] === g).map(p => p[1])) : [],
+      g && c ? subOrder(g, c, ps.filter(p => p[0] === g && p[1] === c).map(p => p[2])) : []];
+    pickers.forEach(([inp, sel, none], i) => {
+      const v = $(inp).value.trim(), vals = lists[i].filter(Boolean), s = $(sel);
+      if (!newMode[i] && v && !vals.includes(v)) newMode[i] = true;
+      s.replaceChildren(opt("", none), ...vals.map(x => opt(x, x)), opt(NEW_OPT, "＋ 新しく入力…"));
+      s.value = newMode[i] ? NEW_OPT : v;
+      s.disabled = i > 0 && !pickers.slice(0, i).every(([p]) => $(p).value.trim());
+      $(inp).hidden = !newMode[i];
+    });
   }
+  pickers.forEach(([inp, sel], i) => {
+    $(sel).onchange = () => {
+      const v = $(sel).value;
+      newMode[i] = v === NEW_OPT; $(inp).value = newMode[i] ? "" : v;
+      for (let j = i + 1; j < pickers.length; j++) { $(pickers[j][0]).value = ""; newMode[j] = false }
+      fillDatalists();
+      if (newMode[i]) $(inp).focus();
+    };
+  });
   $("fG").addEventListener("input", fillDatalists); $("fC").addEventListener("input", fillDatalists);
 
   const treeOpen = new Set();   // "genre›cat" keys of branches the user opened
@@ -800,7 +822,7 @@ code { font-family: var(--f-mono); font-size: .85em; background: var(--bg); padd
   function startEdit(q) {
     editing = q.id;
     const p = pathOf(q);
-    $("fG").value = p[0] || ""; $("fC").value = p[1] || ""; $("fS").value = p[2] || "";
+    $("fG").value = p[0] || ""; $("fC").value = p[1] || ""; $("fS").value = p[2] || ""; newMode.fill(false);
     $("fQ").value = q.q; $("fA").value = answersToText(q); $("fOrdered").checked = !!q.ordered;
     setFormImage(q.image || null); updateAnswerInfo();
     document.querySelector(`input[name=fDiff][value="${q.diff || 2}"]`).checked = true;
@@ -811,6 +833,7 @@ code { font-family: var(--f-mono); font-size: .85em; background: var(--bg); padd
   function resetForm(keepPath) {
     editing = null; const keep = ["fG", "fC", "fS"].map(id => $(id).value);
     $("qForm").reset(); if (keepPath) ["fG", "fC", "fS"].forEach((id, i) => $(id).value = keep[i]);
+    newMode.fill(false); fillDatalists();
     setFormImage(null); updateAnswerInfo();
     $("qFormTitle").textContent = "問題を追加"; $("qSave").textContent = "追加する"; $("qCancel").hidden = true;
   }
