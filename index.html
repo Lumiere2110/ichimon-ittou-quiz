@@ -48,6 +48,11 @@ nav button[aria-selected="true"] { background: var(--ink); color: var(--bg) }
 .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 14px 18px }
 .grid3 { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 10px }
 .pick { display: flex; flex-direction: column; gap: 6px; min-width: 0 }
+.prow { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 10px; align-items: start }
+.chips { display: flex; flex-wrap: wrap; gap: 6px; align-items: center }
+.chip { display: inline-flex; align-items: center; gap: 4px; border: 1px solid var(--line); border-radius: 999px; padding: 2px 4px 2px 12px; font-size: .85rem; background: var(--surface) }
+.chip button { font: inherit; border: 0; background: none; color: var(--muted); cursor: pointer; padding: 0 6px; border-radius: 999px }
+.chip button:hover { color: var(--ng) }
 .field { display: flex; flex-direction: column; gap: 6px; min-width: 0 }
 .label { font-size: .75rem; font-weight: 700; color: var(--muted); letter-spacing: .08em }
 .label em { font-style: normal; font-weight: 500; letter-spacing: 0 }
@@ -179,12 +184,14 @@ code { font-family: var(--f-mono); font-size: .85em; background: var(--bg); padd
   <section id="viewSetup" class="panel">
     <div class="row"><h2>ゲーム設定</h2><span class="spacer"></span><span class="note">登録問題 <span id="totalCount" class="count">0</span> 問</span></div>
     <div class="field">
-      <span class="label">出題範囲 <em>（ジャンル → カテゴリ → サブカテゴリ。「すべて」にすると、その下をまとめて出題）</em></span>
+      <span class="label">出題範囲 <em>（ジャンル → カテゴリ → サブカテゴリ。「すべて」にすると、その下をまとめて出題。「＋ 範囲に追加」で複数の範囲を混ぜられます）</em></span>
       <div class="grid3">
         <select id="optG" aria-label="ジャンル"></select>
         <select id="optC" aria-label="カテゴリ"></select>
         <select id="optS" aria-label="サブカテゴリ"></select>
       </div>
+      <div class="row"><button class="btn small" id="scopeAdd" type="button">＋ 範囲に追加</button><span class="note" id="scopeNote"></span></div>
+      <div class="chips" id="scopeChips" hidden></div>
     </div>
     <div class="grid">
       <div class="field">
@@ -361,15 +368,9 @@ code { font-family: var(--f-mono); font-size: .85em; background: var(--bg); padd
     <form class="panel" id="qForm" autocomplete="off">
       <div class="row"><h2 id="qFormTitle">問題を追加</h2></div>
       <div class="field">
-        <span class="label">分類 <em>（一覧から選ぶか「＋ 新しく入力」で追加。カテゴリ・サブカテゴリはなしでもOK）</em></span>
-        <div class="grid3">
-          <div class="pick"><select id="sG" aria-label="ジャンルを選ぶ"></select>
-            <input type="text" id="fG" placeholder="新しいジャンル（例：歴史）" aria-label="ジャンル" hidden></div>
-          <div class="pick"><select id="sC" aria-label="カテゴリを選ぶ"></select>
-            <input type="text" id="fC" placeholder="新しいカテゴリ（例：日本史）" aria-label="カテゴリ" hidden></div>
-          <div class="pick"><select id="sS" aria-label="サブカテゴリを選ぶ"></select>
-            <input type="text" id="fS" placeholder="新しいサブカテゴリ（例：江戸時代）" aria-label="サブカテゴリ" hidden></div>
-        </div>
+        <span class="label">分類 <em>（一覧から選ぶか「＋ 新しく入力」で追加。カテゴリ・サブカテゴリはなしでもOK。「＋ 分類を追加」で複数の分類に入れられます）</em></span>
+        <div id="fPaths" class="stack"></div>
+        <div class="row"><button class="btn small" id="fPathAdd" type="button">＋ 分類を追加</button></div>
       </div>
       <div class="field">
         <span class="label">難易度</span>
@@ -411,6 +412,7 @@ code { font-family: var(--f-mono); font-size: .85em; background: var(--bg); padd
         <summary>まとめて追加</summary>
         <div style="display:flex;flex-direction:column;gap:10px;margin-top:12px">
           <p class="note">1行に1問、<code>ジャンル&gt;カテゴリ&gt;サブカテゴリ,難易度(1〜3),問題文,答え</code> の形で書きます。カテゴリ・サブカテゴリ・難易度は省略できます（難易度を省略すると★★）。別解は / で、答えが複数ある問題の答え同士は | で区切ります（順不同）。画像はあとから「編集」で付けられます。</p>
+          <p class="note">複数の分類に入れるときは、分類同士を ; で区切ります（例：<code>歴史&gt;日本史;地理&gt;日本の地理,1,…</code>）。</p>
           <p class="note">例：<code>歴史&gt;日本史&gt;江戸時代,1,江戸幕府を開いたのは？,徳川家康/家康</code><br>
           複数の例：<code>食べ物・料理,2,世界三大珍味を答えよ。,キャビア|フォアグラ|トリュフ</code></p>
           <textarea id="bulk" rows="6" placeholder="ジャンル>カテゴリ>サブカテゴリ,難易度,問題文,答え"></textarea>
@@ -559,10 +561,13 @@ code { font-family: var(--f-mono); font-size: .85em; background: var(--bg); padd
 
   // ---------- helpers ----------
   const pathOf = q => (Array.isArray(q.path) && q.path.length ? q.path : [q.genre || "未分類"]);
+  // a question may sit in several places: paths[] when it has more than one, else just path
+  const pathsOf = q => (Array.isArray(q.paths) && q.paths.length ? q.paths : [pathOf(q)]);
   const pathText = p => p.join(" › ");
+  const pathsText = q => pathsOf(q).map(pathText).join(" ／ ");
   // filter = array of up to 3 entries: "" (all) | NONE (no deeper level) | name
-  function matches(q, filter) {
-    const p = pathOf(q);
+  const matches = (q, filter) => pathsOf(q).some(p => pathMatches(p, filter));
+  function pathMatches(p, filter) {
     for (let i = 0; i < filter.length; i++) {
       const f = filter[i];
       if (!f) return true;
@@ -650,11 +655,16 @@ code { font-family: var(--f-mono); font-size: .85em; background: var(--bg); padd
       throw new Error("too big");
     } finally { URL.revokeObjectURL(url) }
   }
+  const uniqPaths = ps => ps.filter((p, i) => ps.findIndex(x => pathText(x) === pathText(p)) === i);
+  // stored shape: path/genre are the first place; paths only when there is more than one
+  const pathFields = ps => ({ path: ps[0], genre: ps[0][0], ...(ps.length > 1 ? { paths: ps } : {}) });
   const cleanPath = parts => { const p = []; for (const x of parts) { const t = (x || "").trim(); if (!t) break; p.push(t) } return p };
   function shuffle(a) { for (let i = a.length - 1; i > 0; i--) { const j = Math.random() * (i + 1) | 0; [a[i], a[j]] = [a[j], a[i]] } return a }
   function tagsFor(q) {
     const f = document.createDocumentFragment();
-    pathOf(q).forEach(p => f.append(el("span", "tag", p)));
+    const ps = pathsOf(q);
+    if (ps.length > 1) ps.forEach(p => f.append(el("span", "tag", pathText(p))));
+    else ps[0].forEach(p => f.append(el("span", "tag", p)));
     f.append(el("span", "tag", DIFF[q.diff || 2]));
     return f;
   }
@@ -671,10 +681,10 @@ code { font-family: var(--f-mono); font-size: .85em; background: var(--bg); padd
         const pool = questions.filter(q => matches(q, upper));
         sel.append(opt("", `${allLabels[lvl]}（${pool.length}問）`));
         if (!blocked) {
-          const found = pool.map(q => pathOf(q)[lvl]).filter(Boolean);
+          const found = pool.flatMap(q => pathsOf(q).filter(p => pathMatches(p, upper)).map(p => p[lvl])).filter(Boolean);
           const names = lvl === 0 ? genreOrder(found) : lvl === 1 ? catOrder(upper[0], found) : subOrder(upper[0], upper[1], found);
-          names.forEach(n => sel.append(opt(n, `${n}（${pool.filter(q => pathOf(q)[lvl] === n).length}問）`)));
-          const direct = pool.filter(q => pathOf(q).length <= lvl).length;
+          names.forEach(n => sel.append(opt(n, `${n}（${questions.filter(q => matches(q, [...upper, n])).length}問）`)));
+          const direct = questions.filter(q => matches(q, [...upper, NONE])).length;
           if (lvl > 0 && direct && names.length) sel.append(opt(NONE, `（${LEVELS[lvl]}なし）（${direct}問）`));
         }
         sel.disabled = blocked;
@@ -704,52 +714,82 @@ code { font-family: var(--f-mono); font-size: .85em; background: var(--bg); padd
 
   function refresh() {
     $("totalCount").textContent = questions.length;
-    setupScope.fill(); listScope.fill();
+    setupScope.fill(); listScope.fill(); renderScopeChips();
     fillDatalists(); renderTree(); renderList(); updateSetupMsg();
   }
 
   // ---------- manage ----------
   // each level is a select of known names plus "new"; the text input behind it holds the value and shows only for "new"
+  // one row per classification; the form can hold several rows
   const NEW_OPT = "\u0000new";
-  const pickers = [["fG", "sG", "ジャンルを選んでください"], ["fC", "sC", "（カテゴリなし）"], ["fS", "sS", "（サブカテゴリなし）"]];
-  const newMode = [false, false, false];
-  function fillDatalists() {
-    const g = $("fG").value.trim(), c = $("fC").value.trim();
-    const ps = questions.map(pathOf);
+  const PICK_NONE = ["ジャンルを選んでください", "（カテゴリなし）", "（サブカテゴリなし）"];
+  const PICK_PH = ["新しいジャンル（例：歴史）", "新しいカテゴリ（例：日本史）", "新しいサブカテゴリ（例：江戸時代）"];
+  let pathRows = [];
+  function addPathRow(path = []) {
+    const r = { box: el("div", "prow"), sels: [], inps: [], newMode: [false, false, false] };
+    const grid = el("div", "grid3");
+    LEVELS.forEach((name, i) => {
+      const sel = el("select"), inp = el("input");
+      sel.setAttribute("aria-label", `${name}を選ぶ`);
+      inp.type = "text"; inp.placeholder = PICK_PH[i]; inp.setAttribute("aria-label", name); inp.value = path[i] || ""; inp.hidden = true;
+      sel.onchange = () => {
+        const v = sel.value;
+        r.newMode[i] = v === NEW_OPT; inp.value = r.newMode[i] ? "" : v;
+        for (let j = i + 1; j < LEVELS.length; j++) { r.inps[j].value = ""; r.newMode[j] = false }
+        fillRow(r);
+        if (r.newMode[i]) inp.focus();
+      };
+      if (i < 2) inp.addEventListener("input", () => fillRow(r));
+      const pick = el("div", "pick"); pick.append(sel, inp); grid.append(pick);
+      r.sels.push(sel); r.inps.push(inp);
+    });
+    r.rm = el("button", "btn small danger", "外す"); r.rm.type = "button"; r.rm.setAttribute("aria-label", "この分類を外す");
+    r.rm.onclick = () => { r.box.remove(); pathRows = pathRows.filter(x => x !== r); updateRowButtons() };
+    r.box.append(grid, r.rm); $("fPaths").append(r.box); pathRows.push(r);
+    fillRow(r); updateRowButtons();
+    return r;
+  }
+  const updateRowButtons = () => pathRows.forEach(r => r.rm.hidden = pathRows.length < 2);
+  function setPathRows(paths) {
+    $("fPaths").replaceChildren(); pathRows = [];
+    (paths.length ? paths : [[]]).forEach(p => addPathRow(p));
+  }
+  const rowPaths = () => pathRows.map(r => cleanPath(r.inps.map(i => i.value)));
+  function fillRow(r) {
+    const g = r.inps[0].value.trim(), c = r.inps[1].value.trim();
+    const ps = questions.flatMap(pathsOf);
     const lists = [genreOrder(ps.map(p => p[0])),
       g ? catOrder(g, ps.filter(p => p[0] === g).map(p => p[1])) : [],
       g && c ? subOrder(g, c, ps.filter(p => p[0] === g && p[1] === c).map(p => p[2])) : []];
-    pickers.forEach(([inp, sel, none], i) => {
-      const v = $(inp).value.trim(), vals = lists[i].filter(Boolean), s = $(sel);
-      if (!newMode[i] && v && !vals.includes(v)) newMode[i] = true;
-      s.replaceChildren(opt("", none), ...vals.map(x => opt(x, x)), opt(NEW_OPT, "＋ 新しく入力…"));
-      s.value = newMode[i] ? NEW_OPT : v;
-      s.disabled = i > 0 && !pickers.slice(0, i).every(([p]) => $(p).value.trim());
-      $(inp).hidden = !newMode[i];
+    r.sels.forEach((s, i) => {
+      const inp = r.inps[i], v = inp.value.trim(), vals = lists[i].filter(Boolean);
+      if (!r.newMode[i] && v && !vals.includes(v)) r.newMode[i] = true;
+      s.replaceChildren(opt("", PICK_NONE[i]), ...vals.map(x => opt(x, x)), opt(NEW_OPT, "＋ 新しく入力…"));
+      s.value = r.newMode[i] ? NEW_OPT : v;
+      s.disabled = i > 0 && !r.inps.slice(0, i).every(p => p.value.trim());
+      inp.hidden = !r.newMode[i];
     });
   }
-  pickers.forEach(([inp, sel], i) => {
-    $(sel).onchange = () => {
-      const v = $(sel).value;
-      newMode[i] = v === NEW_OPT; $(inp).value = newMode[i] ? "" : v;
-      for (let j = i + 1; j < pickers.length; j++) { $(pickers[j][0]).value = ""; newMode[j] = false }
-      fillDatalists();
-      if (newMode[i]) $(inp).focus();
-    };
-  });
-  $("fG").addEventListener("input", fillDatalists); $("fC").addEventListener("input", fillDatalists);
+  const fillDatalists = () => pathRows.forEach(fillRow);
+  $("fPathAdd").onclick = () => addPathRow().sels[0].focus();
+  setPathRows([]);
 
   const treeOpen = new Set();   // "genre›cat" keys of branches the user opened
   function renderTree() {
     const t = $("tree"); t.replaceChildren();
-    const root = new Map(genreOrder(questions.map(q => pathOf(q)[0])).map(g =>
+    const root = new Map(genreOrder(questions.flatMap(q => pathsOf(q).map(p => p[0]))).map(g =>
       [g, { n: 0, kids: new Map(catOrder(g, []).map(c =>
         [c, { n: 0, kids: new Map(subOrder(g, c, []).map(s => [s, { n: 0, kids: new Map() }])) }])) }]));
     questions.forEach(q => {
-      let node = root;
-      pathOf(q).forEach(name => {
-        if (!node.has(name)) node.set(name, { n: 0, kids: new Map() });
-        const x = node.get(name); x.n++; node = x.kids;
+      const seen = new Set();   // a question in two places under one branch still counts once there
+      pathsOf(q).forEach(p => {
+        let node = root;
+        p.forEach((name, i) => {
+          if (!node.has(name)) node.set(name, { n: 0, kids: new Map() });
+          const x = node.get(name), key = p.slice(0, i + 1).join("›");
+          if (!seen.has(key)) { seen.add(key); x.n++ }
+          node = x.kids;
+        });
       });
     });
     // each level: preset order, empty presets hidden unless asked; branches are <details> whose open state survives re-renders
@@ -801,7 +841,7 @@ code { font-family: var(--f-mono); font-size: .85em; background: var(--bg); padd
     }
     items.forEach((q, i) => {
       const it = el("div", "item");
-      const meta = el("div", "crumb"); meta.append(`${i + 1}. `, el("b", null, pathText(pathOf(q))), " ", el("span", "diff", DIFF[q.diff] || "★★"));
+      const meta = el("div", "crumb"); meta.append(`${i + 1}. `, el("b", null, pathsText(q)), " ", el("span", "diff", DIFF[q.diff] || "★★"));
       const acts = el("div", "acts");
       const eb = el("button", "btn small", "編集"); eb.type = "button"; eb.onclick = () => startEdit(q);
       const db = el("button", "btn small danger", pendingDelete === q.id ? "本当に削除" : "削除"); db.type = "button";
@@ -821,19 +861,16 @@ code { font-family: var(--f-mono); font-size: .85em; background: var(--bg); padd
   let editing = null;
   function startEdit(q) {
     editing = q.id;
-    const p = pathOf(q);
-    $("fG").value = p[0] || ""; $("fC").value = p[1] || ""; $("fS").value = p[2] || ""; newMode.fill(false);
+    setPathRows(pathsOf(q));
     $("fQ").value = q.q; $("fA").value = answersToText(q); $("fOrdered").checked = !!q.ordered;
     setFormImage(q.image || null); updateAnswerInfo();
     document.querySelector(`input[name=fDiff][value="${q.diff || 2}"]`).checked = true;
     $("qFormTitle").textContent = "問題を編集"; $("qSave").textContent = "保存する"; $("qCancel").hidden = false;
-    fillDatalists();
     $("qForm").scrollIntoView({ behavior: "smooth", block: "start" }); $("fQ").focus();
   }
   function resetForm(keepPath) {
-    editing = null; const keep = ["fG", "fC", "fS"].map(id => $(id).value);
-    $("qForm").reset(); if (keepPath) ["fG", "fC", "fS"].forEach((id, i) => $(id).value = keep[i]);
-    newMode.fill(false); fillDatalists();
+    editing = null; const keep = rowPaths().filter(p => p.length);
+    $("qForm").reset(); setPathRows(keepPath ? keep : []);
     setFormImage(null); updateAnswerInfo();
     $("qFormTitle").textContent = "問題を追加"; $("qSave").textContent = "追加する"; $("qCancel").hidden = true;
   }
@@ -870,13 +907,13 @@ code { font-family: var(--f-mono); font-size: .85em; background: var(--bg); padd
 
   $("qForm").onsubmit = async e => {
     e.preventDefault();
-    const path = cleanPath([$("fG").value, $("fC").value, $("fS").value]);
+    const paths = uniqPaths(rowPaths().filter(p => p.length));
     const q = $("fQ").value.trim(), slots = formSlots();
-    if (!path.length || !q || !slots.length) { $("formMsg").textContent = "ジャンル・問題文・答えを入力してください。"; return }
-    if (!$("fC").value.trim() && $("fS").value.trim()) { $("formMsg").textContent = "サブカテゴリを使うときは、カテゴリも入力してください。"; return }
+    if (!paths.length || !q || !slots.length) { $("formMsg").textContent = "ジャンル・問題文・答えを入力してください。"; return }
+    if (pathRows.some(r => !r.inps[1].value.trim() && r.inps[2].value.trim())) { $("formMsg").textContent = "サブカテゴリを使うときは、カテゴリも入力してください。"; return }
     const diff = +document.querySelector("input[name=fDiff]:checked").value;
     const old = editing && questions.find(x => x.id === editing);
-    const item = { id: editing || newId(), path, genre: path[0], q, ...answerFields(slots, $("fOrdered").checked), diff, createdAt: old?.createdAt || Date.now() };
+    const item = { id: editing || newId(), ...pathFields(paths), q, ...answerFields(slots, $("fOrdered").checked), diff, createdAt: old?.createdAt || Date.now() };
     if (formImage) item.image = formImage;
     try { await saveQ(item); toast(editing ? "保存しました" : "追加しました"); $("formMsg").textContent = ""; resetForm(true); $("fQ").focus() }
     catch (err) { $("formMsg").textContent = err?.code === "quota_exceeded" ? "保存できる容量の上限に達しました。画像を外すか、不要な問題を削除してください。" : "保存できませんでした。もう一度試してください。" }
@@ -889,10 +926,10 @@ code { font-family: var(--f-mono); font-size: .85em; background: var(--bg); padd
       let head, diff = 2, q, a;
       if (p.length >= 4 && /^[123]$/.test(p[1])) { head = p[0]; diff = +p[1]; a = p[p.length - 1]; q = p.slice(2, -1).join(",") }
       else if (p.length >= 3) { head = p[0]; a = p[p.length - 1]; q = p.slice(1, -1).join(",") }
-      const path = head ? cleanPath(head.split(/[>＞›]/)).slice(0, 3) : [];
+      const paths = head ? uniqPaths(head.split(/[;；]/).map(h => cleanPath(h.split(/[>＞›]/)).slice(0, 3)).filter(p => p.length)) : [];
       const slots = a ? a.split(/[|｜]/).map(splitAnswers).filter(s => s.length) : [];
-      if (!path.length || !q || !slots.length) { bad.push(n + 1); continue }
-      try { await saveQ({ id: newId(), path, genre: path[0], q, ...answerFields(slots, false), diff, createdAt: Date.now() + n }); ok++ } catch { bad.push(n + 1) }
+      if (!paths.length || !q || !slots.length) { bad.push(n + 1); continue }
+      try { await saveQ({ id: newId(), ...pathFields(paths), q, ...answerFields(slots, false), diff, createdAt: Date.now() + n }); ok++ } catch { bad.push(n + 1) }
     }
     $("bulkMsg").textContent = `${ok}問を追加しました。` + (bad.length ? ` 読み込めなかった行：${bad.join(", ")}` : "");
     if (!bad.length) $("bulk").value = "";
@@ -901,13 +938,32 @@ code { font-family: var(--f-mono); font-size: .85em; background: var(--bg); padd
   // ---------- setup ----------
   const radio = name => +document.querySelector(`input[name=${name}]:checked`).value;
   function readSettings() {
-    return { scope: setupScope.value(), diff: radio("diff"), time: radio("time"), miss: radio("miss"), fails: radio("fails"), count: +$("optCount").value, shuffle: $("optShuffle").checked, loose: $("optLoose").checked };
+    return { scopes: scopeList.length ? scopeList : [setupScope.value()], diff: radio("diff"), time: radio("time"), miss: radio("miss"), fails: radio("fails"), count: +$("optCount").value, shuffle: $("optShuffle").checked, loose: $("optLoose").checked };
   }
-  const pool = s => questions.filter(q => matches(q, s.scope) && (!s.diff || (q.diff || 2) === s.diff));
+  const pool = s => questions.filter(q => s.scopes.some(f => matches(q, f)) && (!s.diff || (q.diff || 2) === s.diff));
   function scopeLabel(scope) {
     const parts = scope.filter(x => x && x !== NONE);
     return parts.length ? parts.join(" › ") : "総合";
   }
+  const scopesLabel = scopes => scopes.map(scopeLabel).join("、");
+
+  // several ranges can be stacked up; while any are listed, the game draws from them instead of the selects
+  let scopeList = [];
+  function renderScopeChips() {
+    const box = $("scopeChips"); box.replaceChildren(); box.hidden = !scopeList.length;
+    scopeList.forEach((f, i) => {
+      const c = el("span", "chip", scopeLabel(f) + `（${questions.filter(q => matches(q, f)).length}問）`);
+      const x = el("button", null, "×"); x.type = "button"; x.setAttribute("aria-label", `${scopeLabel(f)} を範囲から外す`);
+      x.onclick = () => { scopeList.splice(i, 1); renderScopeChips(); updateSetupMsg() };
+      c.append(x); box.append(c);
+    });
+    $("scopeNote").textContent = scopeList.length ? `この ${scopeList.length} つの範囲から混ぜて出題します` : "";
+  }
+  $("scopeAdd").onclick = () => {
+    const f = setupScope.value(), key = JSON.stringify(f);
+    if (!scopeList.some(x => JSON.stringify(x) === key)) scopeList.push(f);
+    setupScope.set([]); renderScopeChips(); updateSetupMsg();
+  };
   function updateSetupMsg() {
     const n = pool(readSettings()).length;
     $("setupMsg").textContent = questions.length === 0 ? "まず「問題を管理」で問題を登録してください。" : n === 0 ? "この条件に合う問題がありません。" : `条件に合う問題：${n}問`;
@@ -1089,7 +1145,7 @@ code { font-family: var(--f-mono); font-size: .85em; background: var(--bg); padd
     const s = g.s;
     const lim = missLimit(s);
     $("rDetail").textContent = (g.over ? `ゲームオーバー（${n} / ${g.qs.length}問目で終了） ・ ` : "")
-      + `正答率 ${n ? Math.round(ok / n * 100) : 0}% ・ ${scopeLabel(s.scope)} ・ 難易度 ${s.diff ? DIFF_NAME[s.diff] : "すべて"} ・ 制限時間 ${s.time ? s.time + "秒" : "なし"}`
+      + `正答率 ${n ? Math.round(ok / n * 100) : 0}% ・ ${scopesLabel(s.scopes)} ・ 難易度 ${s.diff ? DIFF_NAME[s.diff] : "すべて"} ・ 制限時間 ${s.time ? s.time + "秒" : "なし"}`
       + ` ・ 1問で失敗できる回数 ${failLimit(s) < 0 ? "制限なし" : failLimit(s) + "回"}`
       + ` ・ 間違えてもいい回数 ${lim < 0 ? "制限なし" : lim + "回"}`;
 
@@ -1111,7 +1167,7 @@ code { font-family: var(--f-mono); font-size: .85em; background: var(--bg); padd
     wrong.forEach((r, i) => {
       const row = el("div", "res");
       row.append(el("span", "mark ng", "×"), el("span", "qt", `${i + 1}. ${r.q.q}`));
-      row.append(el("span", "crumb", `${pathText(pathOf(r.q))} ・ ${howText(r)}`));
+      row.append(el("span", "crumb", `${pathsText(r.q)} ・ ${howText(r)}`));
       if (r.q.image) { const im = el("img", "thumb"); im.src = r.q.image; im.alt = "問題の画像"; row.append(im) }
       const h = el("div", "hiddenans");
       const btn = el("button", "btn small", "答えを見る"); btn.type = "button";
@@ -1128,7 +1184,7 @@ code { font-family: var(--f-mono); font-size: .85em; background: var(--bg); padd
     $("correctList").replaceChildren(...correct.map((r, i) => {
       const row = el("div", "res");
       row.append(el("span", "mark ok", "○"), el("span", "qt", `${i + 1}. ${r.q.q}`));
-      row.append(el("span", "crumb", `${pathText(pathOf(r.q))} ・ あなたの答え：${r.input}`));
+      row.append(el("span", "crumb", `${pathsText(r.q)} ・ あなたの答え：${r.input}`));
       row.append(el("span", "sub", `正解：${fmtAnswers(r.q)}`));
       return row;
     }));
