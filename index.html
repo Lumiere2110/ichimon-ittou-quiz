@@ -164,6 +164,18 @@ details.tn[open] > summary .tw::before { content: "▾" }
 .status { font-size: .8rem; color: var(--muted) }
 .toast { position: fixed; left: 50%; bottom: calc(20px + env(safe-area-inset-bottom, 0px)); transform: translateX(-50%); background: var(--ink); color: var(--bg); padding: 8px 18px; border-radius: 999px; font-size: .9rem; z-index: 20 }
 .diff { letter-spacing: 1px; color: var(--warn) }
+/* explanation shown after answering; tags */
+.explain { display: flex; flex-direction: column; gap: 2px; white-space: pre-wrap; overflow-wrap: anywhere; font-size: .92rem; line-height: 1.7; color: var(--ink);
+  margin-top: 4px; padding-top: 8px; border-top: 1px solid color-mix(in srgb, currentColor 22%, transparent) }
+.explain-h { font-size: .72rem; font-weight: 700; letter-spacing: .08em; color: var(--muted) }
+.reveal .explain { color: var(--board-ink) }
+.reveal .explain-h { color: inherit; opacity: .7 }
+.item .explain { grid-column: 1; margin-top: 2px }
+.fav.on { color: var(--warn); border-color: var(--warn) }
+.utags { color: var(--muted); font-size: .85rem; grid-column: 1; overflow-wrap: anywhere }
+.tagpick { display: flex; flex-wrap: wrap; gap: 6px; align-items: center }
+.tagpick button { font: inherit; font-size: .8rem; border: 1px solid var(--line); background: var(--bg); color: var(--ink); border-radius: 999px; padding: 1px 10px; cursor: pointer }
+.tagpick button[aria-pressed="true"] { background: var(--ink); color: var(--bg); border-color: var(--ink) }
 details summary { cursor: pointer; font-weight: 700 }
 code { font-family: var(--f-mono); font-size: .85em; background: var(--bg); padding: 1px 5px; border-radius: 4px; overflow-wrap: anywhere }
 @media (prefers-reduced-motion: reduce) { * { transition: none !important; animation: none !important } }
@@ -200,6 +212,10 @@ code { font-family: var(--f-mono); font-size: .85em; background: var(--bg); padd
           <option value="5">5問</option><option value="10" selected>10問</option>
           <option value="20">20問</option><option value="30">30問</option><option value="0">すべて</option>
         </select>
+      </div>
+      <div class="field">
+        <label class="label" for="optTag">タグ</label>
+        <select id="optTag"></select>
       </div>
     </div>
     <div class="field">
@@ -288,6 +304,7 @@ code { font-family: var(--f-mono); font-size: .85em; background: var(--bg); padd
         <span class="note">正解 <span id="gScore" class="count">0</span></span>
         <span class="note" id="gMissWrap">ミス <span id="gMiss" class="count">0</span></span>
         <span class="spacer"></span>
+        <button class="btn small fav" id="gFav" type="button">☆ お気に入り</button>
         <button class="btn" id="quitBtn" type="button">やめる</button>
         <button class="btn primary" id="nextBtn" type="button" hidden>次の問題（Enter）</button>
       </div>
@@ -345,6 +362,7 @@ code { font-family: var(--f-mono); font-size: .85em; background: var(--bg); padd
       <div class="reveal" id="cReveal" hidden>
         <span class="ans" id="cAns"></span>
         <span class="yours" id="cYours"></span>
+        <div class="explain" id="cNote" hidden><span class="explain-h">解説</span><span id="cNoteText"></span></div>
       </div>
     </div>
     <div class="panel" style="margin-top:14px">
@@ -359,7 +377,7 @@ code { font-family: var(--f-mono); font-size: .85em; background: var(--bg); padd
         <strong>復習が終わりました。</strong>
         <button class="btn primary" id="cRetryBtn" type="button">間違えた問題に再挑戦</button>
       </div>
-      <div class="row"><span class="spacer"></span><button class="btn" id="cBackBtn" type="button">結果に戻る</button></div>
+      <div class="row"><button class="btn small fav" id="cFav" type="button" hidden>☆ お気に入り</button><span class="spacer"></span><button class="btn" id="cBackBtn" type="button">結果に戻る</button></div>
     </div>
   </section>
 
@@ -389,6 +407,15 @@ code { font-family: var(--f-mono); font-size: .85em; background: var(--bg); padd
         <textarea id="fA" rows="2" placeholder="例：徳川家康 / 家康&#10;（複数の例：キャビア ⏎ フォアグラ ⏎ トリュフ）" required></textarea>
         <label class="check" id="fOrderedRow" hidden><input type="checkbox" id="fOrdered"> 順番どおりに答える（オフなら順不同）</label>
         <span class="note" id="fAInfo"></span>
+      </div>
+      <div class="field">
+        <label class="label" for="fNote">解説 <em>（任意。答えたあとに表示されます）</em></label>
+        <textarea id="fNote" rows="2" placeholder="例：1603年に征夷大将軍に任命され、江戸に幕府を開いた。"></textarea>
+      </div>
+      <div class="field">
+        <label class="label" for="fTags">タグ <em>（任意。複数は「、」で区切る。下のボタンでも付け外しできます）</em></label>
+        <input type="text" id="fTags" placeholder="例：お気に入り、苦手">
+        <div class="tagpick" id="fTagPick"></div>
       </div>
       <div class="field">
         <span class="label">画像 <em>（任意。貼り付け（Ctrl+V）でも追加できます）</em></span>
@@ -439,6 +466,7 @@ code { font-family: var(--f-mono); font-size: .85em; background: var(--bg); padd
         <select id="lfC" aria-label="カテゴリで絞り込む"></select>
         <select id="lfS" aria-label="サブカテゴリで絞り込む"></select>
       </div>
+      <div class="grid3"><select id="lfTag" aria-label="タグで絞り込む"></select></div>
       <div class="list" id="qList"></div>
     </div>
   </section>
@@ -517,8 +545,10 @@ code { font-family: var(--f-mono); font-size: .85em; background: var(--bg); padd
         if (!(b.id in seen)) {
           if (i < 0) { list.push(b); changed = true }
         } else if (seen[b.id] !== sig && i >= 0) {
-          const untouched = seen[b.id] === null || JSON.stringify(list[i]) === seen[b.id];
-          if (untouched) { list[i] = b; changed = true }
+          // the viewer's own tags (e.g. お気に入り) don't count as editing, and survive the update
+          const { tags, ...rest } = list[i];
+          const untouched = seen[b.id] === null || JSON.stringify(rest) === seen[b.id];
+          if (untouched) { list[i] = tags ? { ...b, tags } : b; changed = true }
         }
         seen[b.id] = sig;
       }
@@ -666,7 +696,47 @@ code { font-family: var(--f-mono); font-size: .85em; background: var(--bg); padd
     if (ps.length > 1) ps.forEach(p => f.append(el("span", "tag", pathText(p))));
     else ps[0].forEach(p => f.append(el("span", "tag", p)));
     f.append(el("span", "tag", DIFF[q.diff || 2]));
+    tagsOf(cur(q)).forEach(t => f.append(el("span", "tag", "#" + t)));
     return f;
+  }
+
+  // ---------- explanation + tags ----------
+  // q.explain: optional text shown after answering. q.tags: optional list of the viewer's own labels
+  const FAV = "お気に入り";
+  const tagsOf = q => (Array.isArray(q?.tags) ? q.tags : []);
+  // game results and cards hold the question as it was when the game began; tags can change since, so look up the live copy
+  const cur = q => questions.find(x => x.id === q.id) || q;
+  const allTags = () => presetFirst([FAV], questions.flatMap(tagsOf));
+  const splitTags = s => [...new Set(s.split(/[,，、;；\s]+/).map(x => x.trim().replace(/^[#＃]/, "")).filter(Boolean))];
+  function explainEl(q) {
+    const d = el("div", "explain"); d.append(el("span", "explain-h", "解説"), el("span", null, q.explain)); return d;
+  }
+  async function toggleTag(id, tag) {
+    const q = questions.find(x => x.id === id); if (!q) return;
+    const t = tagsOf(q), next = t.includes(tag) ? t.filter(x => x !== tag) : [...t, tag];
+    const { tags, ...item } = q;
+    await saveQ(next.length ? { ...item, tags: next } : item);
+  }
+  function favLabel(btn, id) {
+    const on = tagsOf(questions.find(x => x.id === id)).includes(FAV);
+    btn.textContent = on ? "★ お気に入り" : "☆ お気に入り";
+    btn.setAttribute("aria-pressed", on); btn.classList.toggle("on", on);
+    btn.title = on ? "お気に入りから外す" : "お気に入りに追加";
+  }
+  function bindFav(btn, id, after) {
+    favLabel(btn, id);
+    btn.onclick = async () => {
+      try { await toggleTag(id, FAV); favLabel(btn, id); after?.(); toast(btn.classList.contains("on") ? "お気に入りに追加しました" : "お気に入りから外しました") }
+      catch { toast("保存できませんでした") }
+    };
+    return btn;
+  }
+  const favBtn = id => { const b = el("button", "btn small fav"); b.type = "button"; return bindFav(b, id) };
+  // a tag select: first option = no filter; keeps the choice (or a wanted one restored from settings) when the tag still exists
+  function fillTagSelect(sel, allLabel) {
+    const prev = sel.value || sel.dataset.want || "";
+    sel.replaceChildren(opt("", allLabel), ...allTags().map(t => opt(t, `#${t}（${questions.filter(q => tagsOf(q).includes(t)).length}問）`)));
+    if ([...sel.options].some(o => o.value === prev)) { sel.value = prev; delete sel.dataset.want }
   }
 
   // ---------- cascading selects (setup + list filter) ----------
@@ -715,6 +785,7 @@ code { font-family: var(--f-mono); font-size: .85em; background: var(--bg); padd
   function refresh() {
     $("totalCount").textContent = questions.length;
     setupScope.fill(); listScope.fill(); renderScopeChips();
+    fillTagSelect($("optTag"), "タグで絞らない"); fillTagSelect($("lfTag"), "すべてのタグ"); renderTagPick();
     fillDatalists(); renderTree(); renderList(); updateSetupMsg();
   }
 
@@ -829,8 +900,8 @@ code { font-family: var(--f-mono); font-size: .85em; background: var(--bg); padd
 
   let pendingDelete = null;
   function renderList() {
-    const f = listScope.value();
-    const items = questions.filter(q => matches(q, f));
+    const f = listScope.value(), tf = $("lfTag").value;
+    const items = questions.filter(q => matches(q, f) && (!tf || tagsOf(q).includes(tf)));
     $("listCount").textContent = items.length;
     const list = $("qList"); list.replaceChildren();
     if (!items.length) {
@@ -850,19 +921,23 @@ code { font-family: var(--f-mono); font-size: .85em; background: var(--bg); padd
         pendingDelete = null;
         try { await deleteQ(q.id); toast("削除しました") } catch { toast("削除できませんでした") }
       };
-      acts.append(eb, db);
+      acts.append(favBtn(q.id), eb, db);
       it.append(meta, acts, el("div", "q", q.q));
       if (q.image) { const im = el("img", "thumb"); im.src = q.image; im.alt = "問題の画像"; im.loading = "lazy"; it.append(im) }
       it.append(el("div", "a", (isMulti(q) ? `答え（${slotsOf(q).length}つ）：` : "答え：") + fmtAnswers(q)));
+      if (q.explain) it.append(explainEl(q));
+      if (tagsOf(q).length) it.append(el("div", "utags", tagsOf(q).map(t => "#" + t).join(" ")));
       list.append(it);
     });
   }
+  $("lfTag").onchange = renderList;
 
   let editing = null;
   function startEdit(q) {
     editing = q.id;
     setPathRows(pathsOf(q));
     $("fQ").value = q.q; $("fA").value = answersToText(q); $("fOrdered").checked = !!q.ordered;
+    $("fNote").value = q.explain || ""; $("fTags").value = tagsOf(q).join("、"); renderTagPick();
     setFormImage(q.image || null); updateAnswerInfo();
     document.querySelector(`input[name=fDiff][value="${q.diff || 2}"]`).checked = true;
     $("qFormTitle").textContent = "問題を編集"; $("qSave").textContent = "保存する"; $("qCancel").hidden = false;
@@ -871,7 +946,7 @@ code { font-family: var(--f-mono); font-size: .85em; background: var(--bg); padd
   function resetForm(keepPath) {
     editing = null; const keep = rowPaths().filter(p => p.length);
     $("qForm").reset(); setPathRows(keepPath ? keep : []);
-    setFormImage(null); updateAnswerInfo();
+    setFormImage(null); updateAnswerInfo(); renderTagPick();
     $("qFormTitle").textContent = "問題を追加"; $("qSave").textContent = "追加する"; $("qCancel").hidden = true;
   }
   $("qCancel").onclick = () => resetForm(false);
@@ -884,6 +959,21 @@ code { font-family: var(--f-mono); font-size: .85em; background: var(--bg); padd
     $("fAInfo").textContent = n >= 2 ? `答えが ${n} つある問題として登録します。プレイ中は入力欄が ${n} 個出ます。` : "";
   }
   $("fA").addEventListener("input", updateAnswerInfo);
+
+  // tag buttons under the tag box: every known tag (お気に入り always), pressed when it is in the box
+  function renderTagPick() {
+    const now = splitTags($("fTags").value);
+    $("fTagPick").replaceChildren(...presetFirst(allTags(), now).map(t => {
+      const b = el("button", null, "#" + t); b.type = "button"; b.setAttribute("aria-pressed", now.includes(t));
+      b.onclick = () => {
+        const cur = splitTags($("fTags").value);
+        $("fTags").value = (cur.includes(t) ? cur.filter(x => x !== t) : [...cur, t]).join("、");
+        renderTagPick();
+      };
+      return b;
+    }));
+  }
+  $("fTags").addEventListener("input", renderTagPick);
 
   // image picker
   let formImage = null;
@@ -915,6 +1005,9 @@ code { font-family: var(--f-mono); font-size: .85em; background: var(--bg); padd
     const old = editing && questions.find(x => x.id === editing);
     const item = { id: editing || newId(), ...pathFields(paths), q, ...answerFields(slots, $("fOrdered").checked), diff, createdAt: old?.createdAt || Date.now() };
     if (formImage) item.image = formImage;
+    const explain = $("fNote").value.trim(), tags = splitTags($("fTags").value);
+    if (explain) item.explain = explain;
+    if (tags.length) item.tags = tags;
     try { await saveQ(item); toast(editing ? "保存しました" : "追加しました"); $("formMsg").textContent = ""; resetForm(true); $("fQ").focus() }
     catch (err) { $("formMsg").textContent = err?.code === "quota_exceeded" ? "保存できる容量の上限に達しました。画像を外すか、不要な問題を削除してください。" : "保存できませんでした。もう一度試してください。" }
   };
@@ -938,9 +1031,9 @@ code { font-family: var(--f-mono); font-size: .85em; background: var(--bg); padd
   // ---------- setup ----------
   const radio = name => +document.querySelector(`input[name=${name}]:checked`).value;
   function readSettings() {
-    return { scopes: scopeList.length ? scopeList : [setupScope.value()], diff: radio("diff"), time: radio("time"), miss: radio("miss"), fails: radio("fails"), count: +$("optCount").value, shuffle: $("optShuffle").checked, loose: $("optLoose").checked };
+    return { scopes: scopeList.length ? scopeList : [setupScope.value()], tag: $("optTag").value, diff: radio("diff"), time: radio("time"), miss: radio("miss"), fails: radio("fails"), count: +$("optCount").value, shuffle: $("optShuffle").checked, loose: $("optLoose").checked };
   }
-  const pool = s => questions.filter(q => s.scopes.some(f => matches(q, f)) && (!s.diff || (q.diff || 2) === s.diff));
+  const pool = s => questions.filter(q => s.scopes.some(f => matches(q, f)) && (!s.diff || (q.diff || 2) === s.diff) && (!s.tag || tagsOf(q).includes(s.tag)));
   function scopeLabel(scope) {
     const parts = scope.filter(x => x && x !== NONE);
     return parts.length ? parts.join(" › ") : "総合";
@@ -974,6 +1067,7 @@ code { font-family: var(--f-mono); font-size: .85em; background: var(--bg); padd
     const s = JSON.parse(localStorage.getItem("quiz.settings") || "null");
     if (s) {
       $("optCount").value = s.count; $("optShuffle").checked = s.shuffle; $("optLoose").checked = s.loose;
+      if (s.tag) $("optTag").dataset.want = s.tag;
       const d = document.querySelector(`input[name=diff][value="${s.diff}"]`); if (d) d.checked = true;
       const t = document.querySelector(`input[name=time][value="${s.time}"]`); if (t) t.checked = true;
       const m = document.querySelector(`input[name=miss][value="${s.miss}"]`); if (m) m.checked = true;
@@ -1022,6 +1116,7 @@ code { font-family: var(--f-mono); font-size: .85em; background: var(--bg); padd
     $("gQ").textContent = q.q;
     showImage($("gImg"), q);
     $("verdict").hidden = true; $("nextBtn").hidden = true;
+    bindFav($("gFav"), q.id, () => $("gTags").replaceChildren(tagsFor(q)));
     buildAnswerBoxes(q); setAnswerEnabled(true);
     showScore();
     ansInputs()[0].focus();
@@ -1078,6 +1173,7 @@ code { font-family: var(--f-mono); font-size: .85em; background: var(--bg); padd
     v.append(el("b", null, partial ? `${label}（${partial}）` : label));
     if (!ok) v.append(el("span", "detail", "正解：" + fmtAnswers(q)));
     else if (need === 1 && slotsOf(q)[0].length > 1) v.append(el("span", "detail", "別解：" + fmtAnswers(q)));
+    if (q.explain) v.append(explainEl(q));
     const lim = missLimit(game.s);
     game.over = lim >= 0 && game.results.filter(r => !r.ok).length > lim;
     if (game.over) v.append(el("span", "detail", `ゲームオーバー：間違えてもいい回数（${lim}回）を超えました。`));
@@ -1155,6 +1251,7 @@ code { font-family: var(--f-mono); font-size: .85em; background: var(--bg); padd
       const row = el("div", "res");
       row.append(el("span", "mark " + (r.ok ? "ok" : "ng"), r.ok ? "○" : "×"), el("span", "qt", `${i + 1}. ${r.q.q}`));
       row.append(el("span", "sub", `${howText(r)} ／ 正解：${fmtAnswers(r.q)}`));
+      if (r.q.explain) row.append(explainEl(r.q));
       list.append(row);
     });
 
@@ -1172,8 +1269,11 @@ code { font-family: var(--f-mono); font-size: .85em; background: var(--bg); padd
       const h = el("div", "hiddenans");
       const btn = el("button", "btn small", "答えを見る"); btn.type = "button";
       const v = el("span", "ansv", fmtAnswers(r.q)); v.hidden = true;
-      btn.onclick = () => { v.hidden = !v.hidden; btn.textContent = v.hidden ? "答えを見る" : "隠す" };
-      h.append(btn, v); row.append(h);
+      // the explanation gives the answer away, so it stays hidden together with it
+      const n = r.q.explain ? explainEl(r.q) : null; if (n) { n.hidden = true; v.explainEl = n }
+      btn.onclick = () => { v.hidden = !v.hidden; if (n) n.hidden = v.hidden; btn.textContent = v.hidden ? "答えを見る" : "隠す" };
+      h.append(btn, v, el("span", "spacer"), favBtn(r.q.id)); row.append(h);
+      if (n) row.append(n);
       wl.append(row);
     });
 
@@ -1185,14 +1285,16 @@ code { font-family: var(--f-mono); font-size: .85em; background: var(--bg); padd
       const row = el("div", "res");
       row.append(el("span", "mark ok", "○"), el("span", "qt", `${i + 1}. ${r.q.q}`));
       row.append(el("span", "crumb", `${pathsText(r.q)} ・ あなたの答え：${r.input}`));
-      row.append(el("span", "sub", `正解：${fmtAnswers(r.q)}`));
+      const sub = el("div", "hiddenans"); sub.append(el("span", "sub", `正解：${fmtAnswers(r.q)}`), el("span", "spacer"), favBtn(r.q.id));
+      row.append(sub);
+      if (r.q.explain) row.append(explainEl(r.q));
       return row;
     }));
     showOnly("viewResult");
   }
   $("revealAllBtn").onclick = () => {
     const vs = [...$("wrongList").querySelectorAll(".ansv")], showAll = vs.some(v => v.hidden);
-    vs.forEach(v => { v.hidden = !showAll; v.previousSibling.textContent = showAll ? "隠す" : "答えを見る" });
+    vs.forEach(v => { v.hidden = !showAll; if (v.explainEl) v.explainEl.hidden = !showAll; v.previousSibling.textContent = showAll ? "隠す" : "答えを見る" });
     $("revealAllBtn").textContent = showAll ? "答えをすべて隠す" : "答えをすべて表示";
   };
   $("startBtn").onclick = () => startGame(readSettings());
@@ -1211,6 +1313,7 @@ code { font-family: var(--f-mono); font-size: .85em; background: var(--bg); padd
     const finished = !cards.queue.length;
     $("cAskRow").hidden = finished || cards.revealed; $("cJudgeRow").hidden = finished || !cards.revealed; $("cDoneRow").hidden = !finished;
     $("cLeft").textContent = `覚えた ${cards.done} / ${cards.total}`;
+    $("cFav").hidden = finished;
     if (finished) { $("cQ").textContent = "すべてのカードを覚えました！"; $("cTags").replaceChildren(); $("cReveal").hidden = true; $("cImg").hidden = true; $("cRetryBtn").focus(); return }
     const r = cards.queue[0];
     $("cTags").replaceChildren(tagsFor(r.q));
@@ -1218,6 +1321,8 @@ code { font-family: var(--f-mono); font-size: .85em; background: var(--bg); padd
     showImage($("cImg"), r.q);
     $("cAns").textContent = fmtAnswers(r.q);
     $("cYours").textContent = howText(r);
+    $("cNote").hidden = !r.q.explain; $("cNoteText").textContent = r.q.explain || "";
+    bindFav($("cFav"), r.q.id, () => $("cTags").replaceChildren(tagsFor(r.q)));
     $("cReveal").hidden = !cards.revealed;
     (cards.revealed ? $("cGotBtn") : $("cShowBtn")).focus();
   }
@@ -1235,7 +1340,8 @@ code { font-family: var(--f-mono); font-size: .85em; background: var(--bg); padd
   $("cBackBtn").onclick = () => { cards = null; showOnly("viewResult") };
 
   document.addEventListener("keydown", e => {
-    if (e.isComposing || e.target.matches("input, textarea, select")) return;
+    // a focused button (お気に入り, やめる…) handles its own Enter/Space
+    if (e.isComposing || e.target.matches("input, textarea, select") || e.target.closest("button")) return;
     if (game?.answered && e.key === "Enter" && document.activeElement !== $("nextBtn")) { e.preventDefault(); $("nextBtn").click() }
     if (cards && !$("viewCards").hidden) {
       if (!cards.revealed && (e.key === "Enter" || e.key === " ") && document.activeElement !== $("cShowBtn")) { e.preventDefault(); $("cShowBtn").click() }
