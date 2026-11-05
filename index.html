@@ -178,22 +178,94 @@ details.tn[open] > summary .tw::before { content: "▾" }
 .tagpick button[aria-pressed="true"] { background: var(--ink); color: var(--bg); border-color: var(--ink) }
 details summary { cursor: pointer; font-weight: 700 }
 code { font-family: var(--f-mono); font-size: .85em; background: var(--bg); padding: 1px 5px; border-radius: 4px; overflow-wrap: anywhere }
+/* title screen */
+.homelink { font: inherit; color: inherit; background: none; border: 0; padding: 0; cursor: pointer; letter-spacing: inherit }
+.title-screen { min-height: calc(100vh - 72px); min-height: calc(100dvh - 72px); display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 36px; text-align: center }
+.title-logo { background: var(--board); color: var(--board-ink); border-radius: 20px; padding: 28px 28px 24px; display: flex; flex-direction: column; align-items: center; gap: 6px; width: min(560px, 100%);
+  box-shadow: inset 0 0 0 6px color-mix(in srgb, var(--board-ink) 10%, transparent) }
+.title-kicker { font-family: var(--f-mono); font-size: .8rem; letter-spacing: .4em; opacity: .7; padding-left: .4em }
+.title-main { font-family: var(--f-display); font-weight: 400; font-size: clamp(2.2rem, 10vw, 4.2rem); line-height: 1.15; margin: 0; letter-spacing: .03em; text-wrap: balance }
+.title-main.small { font-size: clamp(1.6rem, 7vw, 2.4rem) }
+.title-sub { font-size: .9rem; opacity: .8 }
+.title-menu { display: flex; flex-direction: column; gap: 12px; width: min(300px, 100%) }
+.title-menu .btn { width: 100% }
+/* settings */
+.menu-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(160px, 1fr)); gap: 10px }
+.menu-card { font: inherit; color: var(--ink); background: var(--bg); border: 1px solid var(--line); border-radius: 12px; padding: 14px 16px; text-align: left; cursor: pointer; display: flex; flex-direction: column; gap: 2px }
+.menu-card:hover { border-color: var(--ink) }
+.menu-card b { font-size: 1.05rem }
+.menu-card span { font-size: .8rem; color: var(--muted) }
+.vol-row { display: flex; align-items: center; gap: 12px }
+.vol-row input[type=range] { flex: 1; min-width: 0; accent-color: var(--accent) }
+.vol-val { min-width: 2.5em; text-align: right }
+.swatches { display: grid; grid-template-columns: repeat(auto-fill, minmax(120px, 1fr)); gap: 8px }
+.swatch { font: inherit; font-size: .85rem; color: var(--ink); background: var(--bg); border: 1px solid var(--line); border-radius: 10px; padding: 8px; cursor: pointer; display: flex; align-items: center; gap: 8px; text-align: left }
+.swatch[aria-pressed="true"] { border-color: var(--ink); box-shadow: inset 0 0 0 1px var(--ink) }
+.swatch i { flex: none; width: 34px; height: 24px; border-radius: 6px; display: grid; grid-template-columns: 2fr 1fr; overflow: hidden; border: 1px solid var(--line) }
+input[type=color] { width: 40px; height: 30px; padding: 0 2px; border: 1px solid var(--line); border-radius: 6px; background: var(--bg); cursor: pointer }
+/* test (CBT) */
+.tscope { display: flex; flex-direction: column; border-top: 1px solid var(--line) }
+.tsg { border-bottom: 1px solid var(--line); padding: 6px 2px }
+.tsg-row { display: flex; align-items: center; gap: 10px; flex-wrap: wrap }
+.tsg-row .check { flex: 1 1 auto; font-weight: 700 }
+.tsg-cats { display: flex; flex-wrap: wrap; gap: 4px 16px; padding: 6px 0 4px 26px }
+.tsg-cats .check { font-size: .88rem }
+.cbt-bar { display: flex; align-items: center; gap: 12px; background: var(--surface); border: 1px solid var(--line); border-radius: 12px; padding: 10px 16px; position: sticky; top: 0; z-index: 5 }
+.cbt-time { font-family: var(--f-mono); font-variant-numeric: tabular-nums; font-size: 1.1rem }
+.cbt-time.low { color: var(--ng); font-weight: 700 }
+.cbt-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(44px, 1fr)); gap: 6px }
+.cbt-grid button { font: inherit; font-family: var(--f-mono); font-size: .85rem; height: 40px; border-radius: 8px; border: 1px solid var(--line); background: var(--bg); color: var(--ink); cursor: pointer; position: relative }
+.cbt-grid button.done { background: var(--ink); color: var(--bg); border-color: var(--ink) }
+.cbt-grid button.cur { outline: 2px solid var(--accent); outline-offset: 2px }
+.cbt-grid button.flagged::after, .lg.flagged::after { content: ""; position: absolute; top: 3px; right: 3px; width: 8px; height: 8px; border-radius: 50%; background: var(--warn) }
+.cbt-legend { display: flex; align-items: center; gap: 6px; font-size: .78rem; color: var(--muted); flex-wrap: wrap }
+.lg { display: inline-block; width: 14px; height: 14px; border-radius: 4px; border: 1px solid var(--line); background: var(--bg); position: relative; margin-left: 6px }
+.lg.done { background: var(--ink); border-color: var(--ink) }
+.lg.flagged::after { top: -3px; right: -3px }
+.btn.flag[aria-pressed="true"] { border-color: var(--warn); color: var(--warn) }
+.passmark { font-family: var(--f-display); font-size: 1.4rem; padding: 2px 14px; border-radius: 999px }
+.passmark.ok { background: var(--ok-bg); color: var(--ok) } .passmark.ng { background: var(--ng-bg); color: var(--ng) }
+.gbreak { display: flex; flex-direction: column; gap: 6px }
+.grow { display: grid; grid-template-columns: minmax(0, 9em) 1fr auto; gap: 10px; align-items: center; font-size: .9rem }
+.grow .gname { overflow-wrap: anywhere }
+.grow .gbar { height: 8px; background: var(--line); border-radius: 4px; overflow: hidden }
+.grow .gbar i { display: block; height: 100%; background: var(--ok); border-radius: 4px }
+.grow .count { font-size: .82rem; color: var(--muted) }
 @media (prefers-reduced-motion: reduce) { * { transition: none !important; animation: none !important } }
 @media (max-width: 520px) { .grid3 { grid-template-columns: 1fr } }
 @media (max-width: 480px) { .question { font-size: 1.15rem } .item { grid-template-columns: 1fr } .item .acts { grid-row: auto; grid-column: 1; justify-content: flex-start } }
 </style>
 
 <div class="wrap">
-  <header>
-    <h1>一問一答クイズ<small id="storeStatus" class="status"></small></h1>
-    <nav role="tablist">
-      <button id="tabPlay" role="tab" aria-selected="true" data-view="play">プレイ</button>
-      <button id="tabEdit" role="tab" aria-selected="false" data-view="edit">問題を管理</button>
-    </nav>
+  <header id="topbar" hidden>
+    <h1><button class="homelink" id="homeBtn" type="button" title="タイトルへ戻る">一問一答クイズ</button><small id="storeStatus" class="status"></small></h1>
+    <button class="btn small" id="toTitle" type="button">タイトルへ</button>
   </header>
 
+  <!-- ===== タイトル ===== -->
+  <section id="viewTitle" class="title-screen">
+    <div class="title-logo">
+      <span class="title-kicker">QUIZ</span>
+      <h1 class="title-main">一問一答クイズ</h1>
+      <span class="title-sub">収録 <span class="count" id="titleCount">0</span> 問</span>
+    </div>
+    <div class="title-menu">
+      <button class="btn primary big" id="tPlay" type="button">プレイ</button>
+      <button class="btn big" id="tTest" type="button">テスト</button>
+      <button class="btn big" id="tSettings" type="button">設定</button>
+      <button class="btn big" id="tQuit" type="button">終了</button>
+    </div>
+  </section>
+
+  <!-- ===== 終了 ===== -->
+  <section id="viewBye" class="title-screen" hidden>
+    <div class="title-logo"><h1 class="title-main small">おつかれさまでした</h1></div>
+    <p class="note" id="byeMsg">このタブ（ウィンドウ）を閉じて終了してください。</p>
+    <button class="btn" id="byeBack" type="button">タイトルに戻る</button>
+  </section>
+
   <!-- ===== 設定 ===== -->
-  <section id="viewSetup" class="panel">
+  <section id="viewSetup" class="panel" hidden>
     <div class="row"><h2>ゲーム設定</h2><span class="spacer"></span><span class="note">登録問題 <span id="totalCount" class="count">0</span> 問</span></div>
     <div class="field">
       <span class="label">出題範囲 <em>（ジャンル → カテゴリ → サブカテゴリ。「すべて」にすると、その下をまとめて出題。「＋ 範囲に追加」で複数の範囲を混ぜられます）</em></span>
@@ -264,15 +336,7 @@ code { font-family: var(--f-mono); font-size: .85em; background: var(--bg); padd
     <div class="field">
       <span class="label">その他</span>
       <label class="check"><input type="checkbox" id="optShuffle" checked> 出題順をランダムにする</label>
-      <label class="check"><input type="checkbox" id="optLoose" checked> ゆるく判定する（ひらがな／カタカナ、全角／半角、大文字／小文字、空白、記号、「ー」、小さい文字の違いを無視し、少しの打ち間違いも正解にする）</label>
-    </div>
-    <div class="field">
-      <span class="label">パスのキー</span>
-      <div class="row">
-        <button class="btn small" id="passKeyBtn" type="button">なし</button>
-        <button class="btn small" id="passKeyClear" type="button">解除</button>
-        <span class="note" id="passKeyMsg">ボタンを押してから、パスに使いたいキーを押してください。</span>
-      </div>
+      <span class="note">答えの判定（ゆるく判定する）とパスのキーは、タイトル画面の「設定」で変えられます。</span>
     </div>
     <div class="row">
       <button id="startBtn" class="btn primary big">スタート</button>
@@ -382,7 +446,234 @@ code { font-family: var(--f-mono); font-size: .85em; background: var(--bg); padd
   </section>
 
   <!-- ===== 問題を管理 ===== -->
+  <!-- ===== 設定 ===== -->
+  <section id="viewSettings" class="panel" hidden>
+    <h2>設定</h2>
+    <div class="menu-grid">
+      <button class="menu-card" id="mSound" type="button"><b>サウンド</b><span>効果音の音量</span></button>
+      <button class="menu-card" id="mColor" type="button"><b>カラー</b><span>画面の色・明るさ</span></button>
+      <button class="menu-card" id="mAchieve" type="button"><b>実績</b><span>準備中</span></button>
+      <button class="menu-card" id="mOptions" type="button"><b>判定・操作</b><span>ゆるく判定・パスのキー</span></button>
+      <button class="menu-card" id="toEdit" type="button"><b>問題を管理</b><span>追加・編集・解説・タグ</span></button>
+    </div>
+    <p class="note">設定はこのブラウザに保存されます。</p>
+    <div class="row"><button class="btn" id="settingsBack" type="button">タイトルに戻る</button></div>
+  </section>
+
+  <!-- ===== 設定：サウンド ===== -->
+  <section id="viewSound" class="panel" hidden>
+    <div class="row"><button class="btn small backset" type="button">← 設定</button><h2>サウンド</h2></div>
+    <div class="field">
+      <label class="label" for="volRange">音量</label>
+      <div class="vol-row">
+        <button class="btn small" id="volMute" type="button" aria-pressed="false">ミュート</button>
+        <input type="range" id="volRange" min="0" max="100" step="5" value="60">
+        <span class="count vol-val" id="volVal">60</span>
+      </div>
+      <span class="note">正解・不正解・時間切れ・テスト終了のときに効果音が鳴ります。0 にすると鳴りません。</span>
+    </div>
+    <div class="field">
+      <span class="label">試しに鳴らす</span>
+      <div class="row">
+        <button class="btn small" type="button" data-try="ok">正解</button>
+        <button class="btn small" type="button" data-try="ng">不正解</button>
+        <button class="btn small" type="button" data-try="time">時間切れ</button>
+        <button class="btn small" type="button" data-try="finish">テスト終了</button>
+      </div>
+    </div>
+  </section>
+
+  <!-- ===== 設定：カラー ===== -->
+  <section id="viewColor" class="panel" hidden>
+    <div class="row"><button class="btn small backset" type="button">← 設定</button><h2>カラー</h2></div>
+    <div class="field">
+      <span class="label">明るさ</span>
+      <div class="seg">
+        <label><input type="radio" name="cMode" value="auto" checked><span>端末に合わせる</span></label>
+        <label><input type="radio" name="cMode" value="light"><span>ライト</span></label>
+        <label><input type="radio" name="cMode" value="dark"><span>ダーク</span></label>
+      </div>
+    </div>
+    <div class="field">
+      <span class="label">テーマ</span>
+      <div class="swatches" id="cPresets"></div>
+    </div>
+    <div class="field">
+      <span class="label">自分で選ぶ <em>（テーマの色を上書きします）</em></span>
+      <div class="row">
+        <label class="check"><input type="color" id="cBoard"> 黒板（問題の表示部分）の色</label>
+        <label class="check"><input type="color" id="cAccent"> ボタン・強調の色</label>
+      </div>
+      <div class="row"><button class="btn small" id="cReset" type="button">標準の色に戻す</button></div>
+    </div>
+    <div class="field">
+      <span class="label">見本</span>
+      <div class="board">
+        <div class="board-top"><span class="qnum">第1問 / 10</span><span><span class="tag">見本</span><span class="tag">★★</span></span></div>
+        <div class="question">日本で一番高い山は？</div>
+      </div>
+      <div class="row"><button class="btn primary" type="button" tabindex="-1">回答</button><button class="btn" type="button" tabindex="-1">パス</button></div>
+    </div>
+  </section>
+
+  <!-- ===== 設定：実績 ===== -->
+  <section id="viewAchieve" class="panel" hidden>
+    <div class="row"><button class="btn small backset" type="button">← 設定</button><h2>実績</h2></div>
+    <div class="empty"><strong>準備中です</strong><span>プレイやテストの記録に応じた実績を、今後ここに表示する予定です。</span></div>
+  </section>
+
+  <!-- ===== 設定：判定・操作 ===== -->
+  <section id="viewOptions" class="panel" hidden>
+    <div class="row"><button class="btn small backset" type="button">← 設定</button><h2>判定・操作</h2></div>
+    <div class="field">
+      <span class="label">答えの判定 <em>（プレイとテストの両方に使います）</em></span>
+      <label class="check"><input type="checkbox" id="optLoose" checked> ゆるく判定する（ひらがな／カタカナ、全角／半角、大文字／小文字、空白、記号、「ー」、小さい文字の違いを無視し、少しの打ち間違いも正解にする）</label>
+    </div>
+    <div class="field">
+      <span class="label">パスのキー <em>（プレイ中にこのキーでパスできます）</em></span>
+      <div class="row">
+        <button class="btn small" id="passKeyBtn" type="button">なし</button>
+        <button class="btn small" id="passKeyClear" type="button">解除</button>
+        <span class="note" id="passKeyMsg">ボタンを押してから、パスに使いたいキーを押してください。</span>
+      </div>
+    </div>
+  </section>
+
+  <!-- ===== テスト：設定 ===== -->
+  <section id="viewTest" class="panel" hidden>
+    <div class="row"><h2>テスト（CBT方式）</h2><span class="spacer"></span><span class="note">対象 <span class="count" id="tPoolCount">0</span> 問</span></div>
+    <p class="note">本番の試験のように、制限時間の中で全問に答え、最後にまとめて採点します。解答中は問題を自由に行き来でき、答えの書き直しや「見直し」の印付けもできます。</p>
+    <div class="field">
+      <span class="label">出題範囲 <em>（受けたいジャンルにチェック。「▸ カテゴリ」でカテゴリごとにも選べます）</em></span>
+      <div class="row">
+        <button class="btn small" id="tAll" type="button">すべて選択</button>
+        <button class="btn small" id="tNone" type="button">すべて解除</button>
+      </div>
+      <div class="tscope" id="tScope"></div>
+    </div>
+    <div class="grid">
+      <div class="field">
+        <label class="label" for="tCount">問題数</label>
+        <select id="tCount">
+          <option value="10">10問</option><option value="20" selected>20問</option><option value="30">30問</option>
+          <option value="50">50問</option><option value="100">100問</option><option value="0">範囲内のすべて</option>
+        </select>
+      </div>
+      <div class="field">
+        <label class="label" for="tTag">タグ</label>
+        <select id="tTag"></select>
+      </div>
+    </div>
+    <div class="field">
+      <span class="label">試験時間（全体）</span>
+      <div class="seg">
+        <label><input type="radio" name="tTime" value="0"><span>なし</span></label>
+        <label><input type="radio" name="tTime" value="10"><span>10分</span></label>
+        <label><input type="radio" name="tTime" value="20"><span>20分</span></label>
+        <label><input type="radio" name="tTime" value="30" checked><span>30分</span></label>
+        <label><input type="radio" name="tTime" value="60"><span>60分</span></label>
+        <label><input type="radio" name="tTime" value="90"><span>90分</span></label>
+      </div>
+      <span class="note">時間になると、その時点の答えで自動的に採点します。</span>
+    </div>
+    <div class="field">
+      <span class="label">難易度</span>
+      <div class="seg">
+        <label><input type="radio" name="tDiff" value="0" checked><span>すべて</span></label>
+        <label><input type="radio" name="tDiff" value="1"><span>★ やさしい</span></label>
+        <label><input type="radio" name="tDiff" value="2"><span>★★ ふつう</span></label>
+        <label><input type="radio" name="tDiff" value="3"><span>★★★ むずかしい</span></label>
+      </div>
+    </div>
+    <div class="field">
+      <span class="label">合格ライン</span>
+      <div class="seg">
+        <label><input type="radio" name="tPass" value="50"><span>50%</span></label>
+        <label><input type="radio" name="tPass" value="60" checked><span>60%</span></label>
+        <label><input type="radio" name="tPass" value="70"><span>70%</span></label>
+        <label><input type="radio" name="tPass" value="80"><span>80%</span></label>
+      </div>
+    </div>
+    <div class="row">
+      <button class="btn primary big" id="tStart" type="button">試験を開始</button>
+      <span class="note" id="tMsg"></span>
+    </div>
+  </section>
+
+  <!-- ===== テスト：解答 ===== -->
+  <section id="viewTestRun" class="stack" hidden>
+    <div class="cbt-bar">
+      <span id="tvProg" class="count">解答済み 0 / 0</span>
+      <span class="spacer"></span>
+      <span class="cbt-time" id="tvTime"></span>
+    </div>
+    <div class="board">
+      <div class="board-top">
+        <span class="qnum" id="tvNum">問 1 / 1</span>
+        <span id="tvTags"></span>
+      </div>
+      <div class="question" id="tvQ"></div>
+      <img id="tvImg" class="qimg" alt="問題の画像" hidden>
+    </div>
+    <div class="panel">
+      <form id="tvForm" class="answer-row" autocomplete="off">
+        <span class="note" id="tvHint" hidden></span>
+        <div class="ans-boxes" id="tvBoxes"></div>
+      </form>
+      <div class="row">
+        <button class="btn" id="tvPrev" type="button">← 前へ</button>
+        <button class="btn flag" id="tvFlag" type="button" aria-pressed="false">見直しに印</button>
+        <span class="spacer"></span>
+        <button class="btn primary" id="tvNext" type="button">次へ →</button>
+      </div>
+      <span class="note">答えは入力した時点で保存されます。Enter で次の問題へ進みます。</span>
+    </div>
+    <div class="panel">
+      <div class="row"><h3>問題一覧</h3><span class="spacer"></span>
+        <span class="cbt-legend"><i class="lg done"></i>解答済み <i class="lg"></i>未解答 <i class="lg flagged"></i>見直し</span></div>
+      <div class="cbt-grid" id="tvGrid"></div>
+      <div class="row">
+        <button class="btn primary" id="tvFinish" type="button">解答を終了して採点</button>
+        <span class="spacer"></span>
+        <button class="btn danger" id="tvQuit" type="button">中断する</button>
+      </div>
+      <div class="verdict ng" id="tvConfirm" hidden>
+        <b>採点しますか？</b>
+        <span class="detail" id="tvConfirmMsg"></span>
+        <div class="row">
+          <button class="btn primary" id="tvConfirmYes" type="button">採点する</button>
+          <button class="btn" id="tvConfirmNo" type="button">解答に戻る</button>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ===== テスト：結果 ===== -->
+  <section id="viewTestResult" class="panel" hidden>
+    <h2>テスト結果</h2>
+    <div class="score">
+      <span class="big" id="trScore"></span>
+      <span class="passmark" id="trPass"></span>
+    </div>
+    <p class="note" id="trDetail"></p>
+    <div class="field">
+      <span class="label">ジャンル別の成績</span>
+      <div class="gbreak" id="trGenres"></div>
+    </div>
+    <div class="field">
+      <div class="row"><span class="label">問題ごとの結果</span><span class="spacer"></span>
+        <label class="check"><input type="checkbox" id="trWrongOnly"> 間違えた問題だけ表示</label></div>
+      <div class="list" id="trList"></div>
+    </div>
+    <div class="row">
+      <button class="btn primary" id="trRetry" type="button">同じ条件でもう一度</button>
+      <button class="btn" id="trRetryWrong" type="button">間違えた問題だけで再テスト</button>
+      <button class="btn" id="trBack" type="button">テストの設定に戻る</button>
+    </div>
+  </section>
+
   <section id="viewEdit" class="stack" hidden>
+    <div class="row"><button class="btn small" id="editBack" type="button">← 設定に戻る</button></div>
     <form class="panel" id="qForm" autocomplete="off">
       <div class="row"><h2 id="qFormTitle">問題を追加</h2></div>
       <div class="field">
@@ -768,22 +1059,50 @@ code { font-family: var(--f-mono); font-size: .85em; background: var(--bg); padd
   const listScope = cascade(["lfG", "lfC", "lfS"], ["すべてのジャンル", "すべてのカテゴリ", "すべてのサブカテゴリ"], () => renderList());
 
   // ---------- views ----------
-  const PLAY_VIEWS = ["viewSetup", "viewGame", "viewResult", "viewCards"];
-  function show(view) {
-    const play = view !== "edit";
-    $("tabPlay").setAttribute("aria-selected", play); $("tabEdit").setAttribute("aria-selected", !play);
-    $("viewEdit").hidden = play;
-    if (play) { if (!game && PLAY_VIEWS.every(v => $(v).hidden)) showOnly("viewSetup") }
-    else PLAY_VIEWS.forEach(v => $(v).hidden = true);
+  // one screen at a time; the top bar (title + "タイトルへ") shows everywhere except the title and goodbye screens
+  const VIEWS = ["viewTitle", "viewBye", "viewSetup", "viewGame", "viewResult", "viewCards", "viewSettings", "viewSound", "viewColor", "viewAchieve", "viewOptions",
+    "viewEdit", "viewTest", "viewTestRun", "viewTestResult"];
+  function showOnly(id) {
+    VIEWS.forEach(v => $(v).hidden = v !== id);
+    $("topbar").hidden = id === "viewTitle" || id === "viewBye";
+    window.scrollTo(0, 0);
   }
-  function showOnly(id) { PLAY_VIEWS.forEach(v => $(v).hidden = v !== id) }
-  document.querySelectorAll("nav button").forEach(b => b.onclick = () => {
-    if (b.dataset.view === "edit") { if (game) endGame(true); cards = null; PLAY_VIEWS.forEach(v => $(v).hidden = true) }
-    show(b.dataset.view);
-  });
+  // leave whatever is running and go back to the title; a test in progress asks first
+  function goTitle() {
+    if (test && !confirm("テストを中断してタイトルに戻りますか？（答えは採点されません）")) return;
+    stopTest();
+    if (game) endGame(true);
+    cards = null; capturingKey = false; showPassKey();
+    showOnly("viewTitle"); $("tPlay").focus();
+  }
+  $("homeBtn").onclick = goTitle; $("toTitle").onclick = goTitle;
+  $("tPlay").onclick = () => showOnly("viewSetup");
+  $("tTest").onclick = () => { renderTestScope(); showOnly("viewTest") };
+  $("tSettings").onclick = () => showOnly("viewSettings");
+  $("settingsBack").onclick = goTitle;
+  $("toEdit").onclick = () => showOnly("viewEdit");
+  $("editBack").onclick = () => showOnly("viewSettings");
+  $("mSound").onclick = () => showOnly("viewSound");
+  $("mColor").onclick = () => { renderColorUI(); showOnly("viewColor") };
+  $("mAchieve").onclick = () => showOnly("viewAchieve");
+  $("mOptions").onclick = () => showOnly("viewOptions");
+  document.querySelectorAll(".backset").forEach(b => b.onclick = () => { capturingKey = false; showPassKey(); showOnly("viewSettings") });
+  // 終了: close the page. Browsers only let a script close a window that a script opened,
+  // so a tab opened from a link or bookmark stays open; then show a goodbye screen that says so.
+  $("tQuit").onclick = () => {
+    try { window.close() } catch {}
+    try { if (!window.closed) window.open("", "_self")?.close() } catch {}
+    setTimeout(() => {
+      if (window.closed) return;
+      $("byeMsg").textContent = "ブラウザの仕組みで、このページからはタブを閉じられませんでした。お手数ですが、タブ（ウィンドウ）を閉じて終了してください。";
+      showOnly("viewBye"); $("byeBack").focus();
+    }, 200);
+  };
+  $("byeBack").onclick = goTitle;
 
   function refresh() {
-    $("totalCount").textContent = questions.length;
+    $("totalCount").textContent = questions.length; $("titleCount").textContent = questions.length;
+    fillTagSelect($("tTag"), "タグで絞らない"); if (!$("viewTest").hidden) renderTestScope();
     setupScope.fill(); listScope.fill(); renderScopeChips();
     fillTagSelect($("optTag"), "タグで絞らない"); fillTagSelect($("lfTag"), "すべてのタグ"); renderTagPick();
     fillDatalists(); renderTree(); renderList(); updateSetupMsg();
@@ -1075,6 +1394,94 @@ code { font-family: var(--f-mono); font-size: .85em; background: var(--bg); padd
     }
   } catch {}
 
+  // ゆるく判定 lives on the settings screen now, so it is saved as soon as it changes (it used to be saved only when a game started)
+  try { const l = localStorage.getItem("quiz.loose"); if (l !== null) $("optLoose").checked = l === "1" } catch {}
+  $("optLoose").onchange = () => { try { localStorage.setItem("quiz.loose", $("optLoose").checked ? "1" : "0") } catch {} };
+
+  // ---------- sound ----------
+  // short effect sounds made with Web Audio (no files). Volume 0–100, saved per browser.
+  let volume = 60, volBeforeMute = 60, actx = null;
+  try { const v = localStorage.getItem("quiz.volume"); if (v !== null && !isNaN(+v)) volume = Math.max(0, Math.min(100, +v)) } catch {}
+  const SOUNDS = {
+    ok: [[660, .09, "sine"], [880, .16, "sine"]],
+    ng: [[233, .14, "square"], [185, .24, "square"]],
+    time: [[523, .1, "triangle"], [392, .1, "triangle"], [262, .26, "triangle"]],
+    finish: [[523, .1, "sine"], [659, .1, "sine"], [784, .1, "sine"], [1047, .3, "sine"]],
+  };
+  function sfx(name) {
+    if (!volume) return;
+    try {
+      actx = actx || new (window.AudioContext || window.webkitAudioContext)();
+      if (actx.state === "suspended") actx.resume();
+      let t = actx.currentTime + .01;
+      const peak = (volume / 100) ** 2 * .35;
+      for (const [f, d, type] of SOUNDS[name] || []) {
+        const o = actx.createOscillator(), g = actx.createGain();
+        o.type = type; o.frequency.value = f;
+        const p = type === "square" ? peak * .45 : peak;   // square waves sound much louder at the same gain
+        g.gain.setValueAtTime(0, t); g.gain.linearRampToValueAtTime(p, t + .01); g.gain.exponentialRampToValueAtTime(.0001, t + d);
+        o.connect(g).connect(actx.destination); o.start(t); o.stop(t + d + .02);
+        t += d * .9;
+      }
+    } catch {}
+  }
+  function showVolume() {
+    $("volRange").value = volume; $("volVal").textContent = volume;
+    $("volMute").setAttribute("aria-pressed", volume === 0); $("volMute").textContent = volume === 0 ? "ミュート解除" : "ミュート";
+  }
+  function setVolume(v) { volume = v; showVolume(); try { localStorage.setItem("quiz.volume", String(v)) } catch {} }
+  $("volRange").oninput = () => setVolume(+$("volRange").value);
+  $("volRange").onchange = () => sfx("ok");
+  $("volMute").onclick = () => { if (volume) { volBeforeMute = volume; setVolume(0) } else { setVolume(volBeforeMute || 60); sfx("ok") } };
+  document.querySelectorAll("[data-try]").forEach(b => b.onclick = () => sfx(b.dataset.try));
+  showVolume();
+
+  // ---------- colors ----------
+  // a theme sets the board and accent colors for light and dark; custom picks override both. The style tag goes last so it wins.
+  const THEMES = [
+    { id: "chalk", name: "黒板（標準）", light: ["#1F3A2F", "#C8361F"], dark: ["#16352A", "#EF5A3F"] },
+    { id: "navy", name: "紺", light: ["#1D2B48", "#C9701C"], dark: ["#18243D", "#F0A050"] },
+    { id: "wine", name: "えんじ", light: ["#4A1E2B", "#24706E"], dark: ["#3D1822", "#4FB3A9"] },
+    { id: "violet", name: "むらさき", light: ["#34264F", "#B07D00"], dark: ["#2B2042", "#F2C14E"] },
+    { id: "sakura", name: "さくら", light: ["#7A3B58", "#2F6FA6"], dark: ["#5A2C43", "#79B1E3"] },
+    { id: "sky", name: "空", light: ["#1F5673", "#D2462E"], dark: ["#18445C", "#FF7A5C"] },
+    { id: "mono", name: "モノクロ", light: ["#262626", "#262626"], dark: ["#2A2A2A", "#E6E6E6"] },
+  ];
+  let colors = { theme: "chalk", mode: "auto", board: "", accent: "" };
+  try { Object.assign(colors, JSON.parse(localStorage.getItem("quiz.colors") || "{}")) } catch {}
+  // readable text on a given background
+  const inkFor = hex => { const n = parseInt(hex.slice(1), 16), r = n >> 16 & 255, g = n >> 8 & 255, b = n & 255;
+    const lin = c => { c /= 255; return c <= .03928 ? c / 12.92 : ((c + .055) / 1.055) ** 2.4 };
+    return .2126 * lin(r) + .7152 * lin(g) + .0722 * lin(b) > .35 ? "#14110F" : "#FFFFFF" };
+  const themeStyle = document.createElement("style"); document.body.append(themeStyle);
+  function applyColors() {
+    const th = THEMES.find(t => t.id === colors.theme) || THEMES[0];
+    const vars = ([b, a]) => { b = colors.board || b; a = colors.accent || a; return `--board:${b};--board-ink:${inkFor(b) === "#FFFFFF" ? "#F3F6EE" : "#14110F"};--accent:${a};--accent-ink:${inkFor(a)}` };
+    themeStyle.textContent = `:root{${vars(th.light)}}`
+      + `@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){${vars(th.dark)}}}:root[data-theme="dark"]{${vars(th.dark)}}`;
+    if (colors.mode === "auto") document.documentElement.removeAttribute("data-theme"); else document.documentElement.dataset.theme = colors.mode;
+    try { localStorage.setItem("quiz.colors", JSON.stringify(colors)) } catch {}
+  }
+  const isDark = () => colors.mode === "dark" || (colors.mode === "auto" && matchMedia("(prefers-color-scheme: dark)").matches);
+  function renderColorUI() {
+    const th = THEMES.find(t => t.id === colors.theme) || THEMES[0], [b, a] = isDark() ? th.dark : th.light;
+    document.querySelector(`input[name=cMode][value="${colors.mode}"]`).checked = true;
+    $("cBoard").value = (colors.board || b).toLowerCase(); $("cAccent").value = (colors.accent || a).toLowerCase();
+    $("cPresets").replaceChildren(...THEMES.map(t => {
+      const btn = el("button", "swatch"); btn.type = "button"; btn.setAttribute("aria-pressed", t.id === colors.theme && !colors.board && !colors.accent);
+      const [tb, ta] = isDark() ? t.dark : t.light, sw = el("i"), s1 = el("span"), s2 = el("span");
+      s1.style.background = tb; s2.style.background = ta; sw.append(s1, s2);
+      btn.append(sw, t.name);
+      btn.onclick = () => { colors = { ...colors, theme: t.id, board: "", accent: "" }; applyColors(); renderColorUI() };
+      return btn;
+    }));
+  }
+  document.querySelectorAll("input[name=cMode]").forEach(r => r.onchange = () => { colors.mode = r.value; applyColors(); renderColorUI() });
+  $("cBoard").oninput = () => { colors.board = $("cBoard").value; applyColors(); renderColorUI() };
+  $("cAccent").oninput = () => { colors.accent = $("cAccent").value; applyColors(); renderColorUI() };
+  $("cReset").onclick = () => { colors = { theme: "chalk", mode: "auto", board: "", accent: "" }; applyColors(); renderColorUI() };
+  applyColors();
+
   // ---------- game ----------
   let game = null, timerId = null;
   function startGame(s, list) {
@@ -1086,7 +1493,7 @@ code { font-family: var(--f-mono); font-size: .85em; background: var(--bg); padd
     if (!qs.length) return;
     cards = null;
     game = { s, qs, i: 0, results: [], answered: false, over: false };
-    show("play"); showOnly("viewGame"); $("gTimer").hidden = !s.time; $("gTime").hidden = !s.time;
+    showOnly("viewGame"); $("gTimer").hidden = !s.time; $("gTime").hidden = !s.time;
     nextQuestion();
   }
   const ansInputs = () => [...$("ansBoxes").querySelectorAll("input")];
@@ -1158,7 +1565,7 @@ code { font-family: var(--f-mono); font-size: .85em; background: var(--bg); padd
     // a wrong answer with tries left: say so and let them answer again while the timer keeps running
     const flim = failLimit(game.s);
     if (why === "answer" && !ok && (flim < 0 || game.fails < flim)) {
-      game.fails++;
+      game.fails++; sfx("ng");
       v.append(el("b", null, partial ? `ちがいます（${partial}）` : "ちがいます"),
         el("span", "detail", flim < 0 ? "もう一度答えられます。" : `あと ${flim - game.fails + 1} 回答えられます。`));
       v.hidden = false;
@@ -1167,6 +1574,7 @@ code { font-family: var(--f-mono); font-size: .85em; background: var(--bg); padd
       return;
     }
     game.answered = true; clearInterval(timerId);
+    sfx(ok ? "ok" : why === "time" ? "time" : "ng");
     const typed = inputs.map(s => s.trim()).filter(Boolean);
     game.results.push({ q, input: typed.join("、"), hits, ok, why: ok ? "answer" : why, tries: game.fails + (why === "answer" ? 1 : 0) });
     const label = ok ? "正解！" : why === "pass" ? "パス" : why === "time" ? "時間切れ・不正解" : "不正解";
@@ -1349,6 +1757,238 @@ code { font-family: var(--f-mono); font-size: .85em; background: var(--bg); padd
       else if (cards.revealed && e.key === "2") cardJudge(false);
     }
   });
+
+  // ---------- test (CBT) ----------
+  // Pick genres/categories, answer everything under one overall timer, move freely between questions, grade at the end.
+  // testSel holds the chosen ranges as JSON keys of [genre, category]; category NONE = questions filed directly under the genre
+  let testSel = new Set(), testOpen = new Set(), test = null, lastTest = null;
+  try {
+    const t = JSON.parse(localStorage.getItem("quiz.test") || "null");
+    if (t) {
+      (t.sel || []).forEach(k => testSel.add(k));
+      $("tCount").value = t.count ?? 20;
+      [["tTime", t.time], ["tDiff", t.diff], ["tPass", t.pass]].forEach(([n, v]) => { const r = document.querySelector(`input[name=${n}][value="${v}"]`); if (r) r.checked = true });
+      if (t.tag) $("tTag").dataset.want = t.tag;
+    }
+  } catch {}
+  // the genre → category layout of every question place
+  function testTree() {
+    const ps = questions.flatMap(pathsOf);
+    return genreOrder(ps.map(p => p[0])).map(g => {
+      const mine = ps.filter(p => p[0] === g);
+      if (!mine.length) return null;
+      const cats = catOrder(g, mine.map(p => p[1])).filter(c => mine.some(p => p[1] === c));
+      if (mine.some(p => p.length < 2)) cats.push(NONE);
+      return { g, cats };
+    }).filter(Boolean);
+  }
+  const keyOfRange = (g, c) => JSON.stringify([g, c]);
+  const countIn = f => questions.filter(q => matches(q, f)).length;
+  function renderTestScope() {
+    const box = $("tScope"); box.replaceChildren();
+    const tree = testTree();
+    // forget ranges that no longer exist
+    const live = new Set(tree.flatMap(({ g, cats }) => cats.map(c => keyOfRange(g, c))));
+    [...testSel].forEach(k => { if (!live.has(k)) testSel.delete(k) });
+    tree.forEach(({ g, cats }) => {
+      const keys = cats.map(c => keyOfRange(g, c)), on = keys.filter(k => testSel.has(k)).length;
+      const wrap = el("div", "tsg"), row = el("div", "tsg-row");
+      const lab = el("label", "check"), cb = el("input"); cb.type = "checkbox";
+      cb.checked = on === keys.length; cb.indeterminate = on > 0 && on < keys.length;
+      cb.onchange = () => { keys.forEach(k => cb.checked ? testSel.add(k) : testSel.delete(k)); renderTestScope() };
+      lab.append(cb, ` ${g} `, el("span", "count", `（${countIn([g])}問）`));
+      row.append(lab);
+      const catsBox = el("div", "tsg-cats"); catsBox.hidden = !testOpen.has(g);
+      if (cats.length > 1 || cats[0] !== NONE) {
+        const tg = el("button", "tshow", (testOpen.has(g) ? "▾" : "▸") + " カテゴリ"); tg.type = "button";
+        tg.setAttribute("aria-expanded", testOpen.has(g));
+        tg.onclick = () => { testOpen.has(g) ? testOpen.delete(g) : testOpen.add(g); renderTestScope() };
+        row.append(el("span", "note", on && on < keys.length ? `${on} / ${keys.length} カテゴリ` : ""), tg);
+        cats.forEach(c => {
+          const k = keyOfRange(g, c), l = el("label", "check"), x = el("input"); x.type = "checkbox"; x.checked = testSel.has(k);
+          x.onchange = () => { x.checked ? testSel.add(k) : testSel.delete(k); renderTestScope() };
+          l.append(x, ` ${c === NONE ? "（カテゴリなし）" : c} `, el("span", "count", `（${countIn([g, c])}問）`));
+          catsBox.append(l);
+        });
+      }
+      wrap.append(row, catsBox); box.append(wrap);
+    });
+    if (!tree.length) box.append(el("p", "note", "まだ問題がありません。"));
+    updateTestMsg();
+  }
+  $("tAll").onclick = () => { testTree().forEach(({ g, cats }) => cats.forEach(c => testSel.add(keyOfRange(g, c)))); renderTestScope() };
+  $("tNone").onclick = () => { testSel.clear(); renderTestScope() };
+  function readTest() {
+    return { sel: [...testSel], count: +$("tCount").value, time: radio("tTime"), diff: radio("tDiff"), pass: radio("tPass"), tag: $("tTag").value, loose: $("optLoose").checked };
+  }
+  const testPool = t => questions.filter(q => t.sel.some(k => matches(q, JSON.parse(k))) && (!t.diff || (q.diff || 2) === t.diff) && (!t.tag || tagsOf(q).includes(t.tag)));
+  function updateTestMsg() {
+    const t = readTest(), n = testPool(t).length;
+    $("tPoolCount").textContent = n;
+    const k = t.count ? Math.min(t.count, n) : n;
+    $("tMsg").textContent = !t.sel.length ? "出題範囲を選んでください。" : !n ? "この条件に合う問題がありません。" : `${k}問を出題します` + (t.time ? `（試験時間 ${t.time}分）` : "（時間制限なし）");
+    $("tStart").disabled = !k;
+  }
+  $("viewTest").addEventListener("change", updateTestMsg);
+  $("tStart").onclick = () => {
+    const t = readTest();
+    try { localStorage.setItem("quiz.test", JSON.stringify(t)) } catch {}
+    startTest(t);
+  };
+
+  function startTest(t, list) {
+    let qs = shuffle(list ? [...list] : testPool(t));
+    if (t.count && !list) qs = qs.slice(0, t.count);
+    if (!qs.length) return;
+    if (game) endGame(true);
+    stopTest();
+    test = { t, qs, i: 0, answers: qs.map(q => slotsOf(q).map(() => "")), flags: new Set(), start: Date.now(), end: t.time ? Date.now() + t.time * 60000 : 0 };
+    $("tvConfirm").hidden = true;
+    showOnly("viewTestRun");
+    renderTestQ(); tickTest();
+    test.timer = setInterval(tickTest, 500);
+  }
+  function stopTest() { if (test) clearInterval(test.timer); test = null }
+  const mmss = ms => { const s = Math.max(0, Math.ceil(ms / 1000)); return `${Math.floor(s / 60)}:${String(s % 60).padStart(2, "0")}` };
+  function tickTest() {
+    if (!test) return;
+    const now = Date.now();
+    if (test.end) {
+      const left = test.end - now;
+      $("tvTime").textContent = `残り ${mmss(left)}`;
+      $("tvTime").classList.toggle("low", left < 60000 * Math.min(5, test.t.time / 4));
+      if (left <= 0) { finishTest(true); return }
+    } else $("tvTime").textContent = `経過 ${mmss(now - test.start)}`;
+  }
+  const isAnswered = a => a.some(s => s.trim());
+  function renderTestQ() {
+    const { qs, i } = test, q = qs[i], n = slotsOf(q).length;
+    $("tvNum").textContent = `問 ${i + 1} / ${qs.length}`;
+    $("tvTags").replaceChildren(tagsFor(q));
+    $("tvQ").textContent = q.q;
+    showImage($("tvImg"), q);
+    $("tvHint").hidden = n < 2;
+    $("tvHint").textContent = n < 2 ? "" : `答えは ${n} つ（${q.ordered ? "順番どおり" : "順不同"}）`;
+    $("tvBoxes").replaceChildren(...Array.from({ length: n }, (_, k) => {
+      const inp = el("input"); inp.type = "text"; inp.autocomplete = "off"; inp.value = test.answers[i][k];
+      inp.placeholder = n < 2 ? "答えを入力" : `答え ${k + 1}`;
+      inp.setAttribute("aria-label", n < 2 ? `問${i + 1}の答え` : `問${i + 1}の答え ${k + 1}`);
+      inp.addEventListener("input", () => { test.answers[i][k] = inp.value; renderTestGrid() });
+      inp.addEventListener("keydown", e => {
+        if (e.key !== "Enter" || e.isComposing) return;
+        e.preventDefault();
+        if (k < n - 1) $("tvBoxes").children[k + 1].focus();
+        else if (test.i < test.qs.length - 1) gotoTestQ(test.i + 1);
+        else $("tvFinish").focus();
+      });
+      return inp;
+    }));
+    $("tvPrev").disabled = i === 0;
+    $("tvNext").disabled = i === qs.length - 1;
+    $("tvFlag").setAttribute("aria-pressed", test.flags.has(i));
+    $("tvFlag").textContent = test.flags.has(i) ? "見直しの印を外す" : "見直しに印";
+    renderTestGrid();
+    $("tvBoxes").children[0].focus({ preventScroll: true });
+  }
+  function renderTestGrid() {
+    const { qs, i, answers, flags } = test;
+    $("tvGrid").replaceChildren(...qs.map((q, k) => {
+      const b = el("button", [isAnswered(answers[k]) && "done", flags.has(k) && "flagged", k === i && "cur"].filter(Boolean).join(" "), String(k + 1));
+      b.type = "button";
+      b.setAttribute("aria-label", `問${k + 1}` + (isAnswered(answers[k]) ? " 解答済み" : " 未解答") + (flags.has(k) ? " 見直し" : ""));
+      if (k === i) b.setAttribute("aria-current", "true");
+      b.onclick = () => gotoTestQ(k);
+      return b;
+    }));
+    const done = answers.filter(isAnswered).length;
+    $("tvProg").textContent = `解答済み ${done} / ${qs.length}` + (flags.size ? ` ・ 見直し ${flags.size}` : "");
+  }
+  function gotoTestQ(k) { if (!test || k < 0 || k >= test.qs.length) return; test.i = k; $("tvConfirm").hidden = true; renderTestQ() }
+  $("tvPrev").onclick = () => gotoTestQ(test.i - 1);
+  $("tvNext").onclick = () => gotoTestQ(test.i + 1);
+  $("tvForm").onsubmit = e => e.preventDefault();
+  $("tvFlag").onclick = () => {
+    test.flags.has(test.i) ? test.flags.delete(test.i) : test.flags.add(test.i);
+    $("tvFlag").setAttribute("aria-pressed", test.flags.has(test.i));
+    $("tvFlag").textContent = test.flags.has(test.i) ? "見直しの印を外す" : "見直しに印";
+    renderTestGrid();
+  };
+  $("tvFinish").onclick = () => {
+    const blank = test.answers.filter(a => !isAnswered(a)).length, flagged = test.flags.size;
+    $("tvConfirmMsg").textContent = [blank ? `未解答の問題が ${blank} 問あります。` : "すべての問題に解答しています。",
+      flagged ? `見直しの印が付いた問題が ${flagged} 問あります。` : "", "採点すると、答えは変更できません。"].filter(Boolean).join(" ");
+    $("tvConfirm").hidden = false; $("tvConfirmYes").focus();
+  };
+  $("tvConfirmNo").onclick = () => { $("tvConfirm").hidden = true; $("tvBoxes").children[0]?.focus() };
+  $("tvConfirmYes").onclick = () => finishTest(false);
+  $("tvQuit").onclick = () => { if (confirm("テストを中断しますか？（答えは採点されません）")) { stopTest(); showOnly("viewTest"); renderTestScope() } };
+
+  function finishTest(timeUp) {
+    if (!test) return;
+    const { t, qs, answers, start } = test;
+    const used = Math.min(Date.now(), test.end || Infinity) - start;
+    stopTest();
+    const results = qs.map((q, k) => {
+      const inputs = answers[k], need = slotsOf(q).length;
+      const hits = matchSlots(q, inputs, t.loose).filter(Boolean).length;
+      const ok = hits === need && inputs.filter(s => s.trim()).length >= need;
+      return { q, inputs, ok, hits, blank: !isAnswered(inputs) };
+    });
+    lastTest = { t, results, used, timeUp };
+    sfx(timeUp ? "time" : "finish");
+    renderTestResult();
+    showOnly("viewTestResult");
+  }
+  function renderTestResult() {
+    const { t, results, used, timeUp } = lastTest;
+    const n = results.length, ok = results.filter(r => r.ok).length, rate = n ? Math.round(ok / n * 100) : 0, passed = rate >= t.pass;
+    $("trScore").replaceChildren(`${ok}`, el("small", null, ` / ${n}`));
+    $("trPass").className = "passmark " + (passed ? "ok" : "ng");
+    $("trPass").textContent = passed ? "合格" : "不合格";
+    // a genre with every category picked reads as "genre（すべて）"
+    const picked = new Set(t.sel), ranges = testTree().flatMap(({ g, cats }) => {
+      const on = cats.filter(c => picked.has(keyOfRange(g, c)));
+      if (!on.length) return [];
+      if (on.length === cats.length) return [`${g}（すべて）`];
+      return on.map(c => c === NONE ? `${g}（カテゴリなし）` : `${g} › ${c}`);
+    });
+    const rangeText = ranges.length > 4 ? `${ranges.slice(0, 4).join("、")} ほか${ranges.length - 4}件` : ranges.join("、");
+    $("trDetail").textContent = (timeUp ? "時間切れのため、その時点の答えで採点しました。 ・ " : "")
+      + `正答率 ${rate}%（合格ライン ${t.pass}%） ・ 未解答 ${results.filter(r => r.blank).length}問 ・ 解答時間 ${mmss(used)}`
+      + (t.time ? `（試験時間 ${t.time}分）` : "") + ` ・ 範囲：${rangeText || "—"}`;
+    // per-genre breakdown (by each question's first genre)
+    const by = new Map();
+    results.forEach(r => { const g = pathsOf(r.q)[0][0]; const x = by.get(g) || { n: 0, ok: 0 }; x.n++; if (r.ok) x.ok++; by.set(g, x) });
+    $("trGenres").replaceChildren(...genreOrder([...by.keys()]).filter(g => by.has(g)).map(g => {
+      const x = by.get(g), row = el("div", "grow"), bar = el("span", "gbar"), fill = el("i");
+      fill.style.width = `${x.ok / x.n * 100}%`; bar.append(fill);
+      row.append(el("span", "gname", g), bar, el("span", "count", `${x.ok} / ${x.n}（${Math.round(x.ok / x.n * 100)}%）`));
+      return row;
+    }));
+    renderTestList();
+    $("trRetryWrong").disabled = ok === n;
+  }
+  function renderTestList() {
+    const only = $("trWrongOnly").checked;
+    const rows = lastTest.results.map((r, k) => [r, k]).filter(([r]) => !only || !r.ok);
+    $("trList").replaceChildren(...rows.map(([r, k]) => {
+      const row = el("div", "res");
+      row.append(el("span", "mark " + (r.ok ? "ok" : "ng"), r.ok ? "○" : "×"), el("span", "qt", `問${k + 1}. ${r.q.q}`));
+      if (r.q.image) { const im = el("img", "thumb"); im.src = r.q.image; im.alt = "問題の画像"; row.append(im) }
+      const yours = r.blank ? "未解答" : r.inputs.map(s => s.trim()).filter(Boolean).join("、");
+      const part = isMulti(r.q) && !r.ok && r.hits ? `（全${slotsOf(r.q).length}つのうち${r.hits}つ正解）` : "";
+      row.append(el("span", "crumb", `${pathsText(r.q)} ・ あなたの答え：${yours}${part}`));
+      const sub = el("div", "hiddenans"); sub.append(el("span", "sub", `正解：${fmtAnswers(r.q)}`), el("span", "spacer"), favBtn(r.q.id));
+      row.append(sub);
+      if (r.q.explain) row.append(explainEl(r.q));
+      return row;
+    }));
+    if (!rows.length) $("trList").append(el("p", "note", "間違えた問題はありません。"));
+  }
+  $("trWrongOnly").onchange = renderTestList;
+  $("trRetry").onclick = () => startTest(lastTest.t);
+  $("trRetryWrong").onclick = () => startTest(lastTest.t, lastTest.results.filter(r => !r.ok).map(r => r.q));
+  $("trBack").onclick = () => { renderTestScope(); showOnly("viewTest") };
 
   initStore();
 })();
