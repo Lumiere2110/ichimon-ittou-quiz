@@ -919,7 +919,8 @@ input[type=color] { width: 40px; height: 30px; padding: 0 2px; border: 1px solid
     return prev[b.length];
   }
   // loose mode: symbols/ー/small kana are ignored for answers that still have 3+ characters without them (so "C++" never matches "C"),
-  // and small typos are forgiven: 1 character for 4+, 2 for 10+. Never for answers with digits (years, numbers).
+  // and small typos are forgiven: 1 character for 4+, 2 for 10+. Never for answers with digits (years, numbers)
+  // or for short answers made only of Latin letters (abbreviations).
   function sameAnswer(answer, input, loose) {
     if (normalize(answer, loose) === normalize(input, loose)) return true;
     if (!loose) return false;
@@ -927,6 +928,8 @@ input[type=color] { width: 40px; height: 30px; padding: 0 2px; border: 1px solid
     if (len < 3 || !b) return false;
     if (a === b) return true;
     if (/\d/.test(a)) return false;
+    // short all-letter answers are usually abbreviations (VoIP, DHCP, HTML): one wrong letter makes a different word, so no typos there
+    if (/^[a-z]+$/.test(a) && len <= 5) return false;
     const allow = len >= 10 ? 2 : len >= 4 ? 1 : 0;
     return allow > 0 && Math.abs(len - [...b].length) <= allow && editDistance(a, b) <= allow;
   }
